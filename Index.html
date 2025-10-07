@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin & User Panel System</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #0f172a;
+      color: white;
+      text-align: center;
+      padding: 30px;
+    }
+    button {
+      background: #3b82f6;
+      border: none;
+      padding: 10px 20px;
+      color: white;
+      border-radius: 6px;
+      margin: 10px;
+      cursor: pointer;
+    }
+    button:hover { background: #2563eb; }
+    .panel {
+      display: none;
+      margin-top: 30px;
+      background: #1e293b;
+      padding: 20px;
+      border-radius: 8px;
+    }
+  </style>
+</head>
+<body>
+  <h2>Firebase Google Login with Admin/User Panel</h2>
+  <div id="userInfo"></div>
+  <button id="loginBtn">Login with Google</button>
+  <button id="logoutBtn" style="display:none;">Logout</button>
+
+  <!-- Panels -->
+  <div id="adminPanel" class="panel">
+    <h3>👑 Admin Panel</h3>
+    <p>Welcome Admin! You have full access.</p>
+  </div>
+
+  <div id="userPanel" class="panel">
+    <h3>🙋‍♂️ User Panel</h3>
+    <p>Welcome User! Limited access granted.</p>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.0/firebase-app.js";
+    import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged }
+      from "https://www.gstatic.com/firebasejs/10.14.0/firebase-auth.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBtYFjOBAuDQkcrwKRKP4FzbSb5N5pudYk",
+      authDomain: "v-tok-d78ad.firebaseapp.com",
+      projectId: "v-tok-d78ad",
+      storageBucket: "v-tok-d78ad.firebasestorage.app",
+      messagingSenderId: "448669303511",
+      appId: "1:448669303511:web:7af9fec0b6e0f981eaa692",
+      measurementId: "G-ZJ2L4E58T1"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const provider = new GoogleAuthProvider();
+
+    const loginBtn = document.getElementById("loginBtn");
+    const logoutBtn = document.getElementById("logoutBtn");
+    const userInfo = document.getElementById("userInfo");
+    const adminPanel = document.getElementById("adminPanel");
+    const userPanel = document.getElementById("userPanel");
+
+    loginBtn.addEventListener("click", async () => {
+      try {
+        await signInWithPopup(auth, provider);
+      } catch (error) {
+        alert("Login failed: " + error.message);
+      }
+    });
+
+    logoutBtn.addEventListener("click", async () => {
+      await signOut(auth);
+    });
+
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        userInfo.innerHTML = `
+          <h3>${user.displayName}</h3>
+          <p>${user.email}</p>
+          <img src="${user.photoURL}" width="80" style="border-radius:50%;">
+        `;
+        loginBtn.style.display = "none";
+        logoutBtn.style.display = "inline-block";
+
+        // 🔥 Admin Check
+        if (user.email === "oa2982458@gmail.com") {
+          adminPanel.style.display = "block";
+          userPanel.style.display = "none";
+        } else {
+          adminPanel.style.display = "none";
+          userPanel.style.display = "block";
+        }
+      } else {
+        userInfo.innerHTML = "";
+        loginBtn.style.display = "inline-block";
+        logoutBtn.style.display = "none";
+        adminPanel.style.display = "none";
+        userPanel.style.display = "none";
+      }
+    });
+  </script>
+</body>
+</html>
