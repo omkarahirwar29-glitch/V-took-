@@ -1,50 +1,61 @@
-<meta name='viewport' content='width=device-width, initial-scale=1'/><!doctype html>
+<meta name='viewport' content='width=device-width, initial-scale=1'/><!DOCTYPE html>
 <html lang="hi">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Firebase Phone OTP Auth</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Firebase OTP Login</title>
   <style>
-    body{font-family:Arial, sans-serif;background:#0f172a;color:#fff;display:flex;align-items:center;justify-content:center;height:100vh;margin:0}
-    .card{background:#111827;padding:20px;border-radius:10px;width:360px;box-shadow:0 6px 18px rgba(0,0,0,0.4);text-align:center}
-    input{width:100%;padding:10px;margin:8px 0;border-radius:6px;border:1px solid #334155;background:#0b1220;color:#fff}
-    button{padding:10px 14px;border-radius:8px;border:none;cursor:pointer;background:#3b82f6;color:#fff;font-weight:700}
-    .muted{font-size:0.85rem;color:#9ca3af}
-    img{border-radius:50%}
-    .hidden{display:none}
+    body {
+      font-family: Arial, sans-serif;
+      background: #0f172a;
+      color: white;
+      text-align: center;
+      padding: 30px;
+    }
+    input {
+      padding: 10px;
+      margin: 10px;
+      border-radius: 6px;
+      border: none;
+      outline: none;
+      width: 250px;
+    }
+    button {
+      background: #3b82f6;
+      border: none;
+      padding: 10px 20px;
+      color: white;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    button:hover { background: #2563eb; }
+    #userPanel {
+      display: none;
+      background: #1e293b;
+      padding: 20px;
+      border-radius: 10px;
+      margin-top: 20px;
+    }
   </style>
 </head>
 <body>
-  <div class="card">
-    <h3>Phone OTP Auth (Firebase)</h3>
+  <h2>📱 Firebase OTP Login System</h2>
 
-    <div id="stepPhone">
-      <p class="muted">Enter phone number (with country code)</p>
-      <input id="phoneNumber" placeholder="+91 9876543210" />
-      <div id="recaptcha-container"></div>
-      <button id="sendOtpBtn">Send OTP</button>
-    </div>
+  <div id="loginBox">
+    <input type="text" id="phoneNumber" placeholder="+91XXXXXXXXXX" /><br>
+    <div id="recaptcha-container"></div>
+    <button id="sendOtpBtn">Send OTP</button>
 
-    <div id="stepOtp" class="hidden">
-      <p class="muted">Enter OTP received</p>
-      <input id="otpCode" placeholder="123456" />
+    <div id="otpBox" style="display:none;">
+      <input type="text" id="otp" placeholder="Enter OTP" /><br>
       <button id="verifyOtpBtn">Verify OTP</button>
-      <p><button id="resendBtn" style="background:#06b6d4">Resend OTP</button></p>
     </div>
+  </div>
 
-    <div id="userInfo" style="margin-top:12px"></div>
-    <button id="logoutBtn" class="hidden" style="background:#ef4444">Logout</button>
-
-    <!-- Panels -->
-    <div id="adminPanel" class="hidden" style="margin-top:12px;background:#06152b;padding:12px;border-radius:8px">
-      <h4>👑 Admin Panel</h4>
-      <p class="muted">Admin phone: +91XXXXXXXXXX</p>
-    </div>
-
-    <div id="userPanel" class="hidden" style="margin-top:12px;background:#021524;padding:12px;border-radius:8px">
-      <h4>🙋 User Panel</h4>
-      <p class="muted">Normal user access</p>
-    </div>
+  <div id="userPanel">
+    <h3>✅ Login Successful!</h3>
+    <p id="userNumber"></p>
+    <button id="logoutBtn">Logout</button>
   </div>
 
   <script type="module">
@@ -57,7 +68,7 @@
       onAuthStateChanged
     } from "https://www.gstatic.com/firebasejs/10.14.0/firebase-auth.js";
 
-    // ---------- आपकी Firebase config ----------
+    // 🔥 Firebase config (तुम्हारा project)
     const firebaseConfig = {
       apiKey: "AIzaSyBtYFjOBAuDQkcrwKRKP4FzbSb5N5pudYk",
       authDomain: "v-tok-d78ad.firebaseapp.com",
@@ -67,133 +78,79 @@
       appId: "1:448669303511:web:7af9fec0b6e0f981eaa692",
       measurementId: "G-ZJ2L4E58T1"
     };
-    // -------------------------------------------
 
+    // Firebase init
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
 
-    // UI elements
-    const phoneInput = document.getElementById('phoneNumber');
-    const sendOtpBtn = document.getElementById('sendOtpBtn');
-    const stepPhone = document.getElementById('stepPhone');
-    const stepOtp = document.getElementById('stepOtp');
-    const otpInput = document.getElementById('otpCode');
-    const verifyOtpBtn = document.getElementById('verifyOtpBtn');
-    const resendBtn = document.getElementById('resendBtn');
-    const userInfo = document.getElementById('userInfo');
-    const logoutBtn = document.getElementById('logoutBtn');
-    const adminPanel = document.getElementById('adminPanel');
-    const userPanel = document.getElementById('userPanel');
+    // reCAPTCHA invisible
+    window.recaptchaVerifier = new RecaptchaVerifier(auth, "recaptcha-container", {
+      size: "invisible",
+    });
 
-    // Admin phone number (identify admin by phone)
-    const ADMIN_PHONE = "+919876543210"; // <-- यहाँ अपना admin नंबर डालो (example)
+    const sendOtpBtn = document.getElementById("sendOtpBtn");
+    const verifyOtpBtn = document.getElementById("verifyOtpBtn");
+    const phoneInput = document.getElementById("phoneNumber");
+    const otpBox = document.getElementById("otpBox");
+    const userPanel = document.getElementById("userPanel");
+    const userNumber = document.getElementById("userNumber");
+    const logoutBtn = document.getElementById("logoutBtn");
 
-    let confirmationResultGlobal = null;
-    let recaptchaVerifier = null;
+    // OTP भेजना
+    sendOtpBtn.addEventListener("click", () => {
+      const phoneNumber = phoneInput.value;
+      if (!phoneNumber.startsWith("+91")) {
+        alert("कृपया +91 के साथ नंबर डालें, जैसे +919876543210");
+        return;
+      }
 
-    // Initialize invisible reCAPTCHA
-    function initRecaptcha() {
-      // If already initialized, return
-      if (recaptchaVerifier) return recaptchaVerifier;
+      const appVerifier = window.recaptchaVerifier;
+      signInWithPhoneNumber(auth, phoneNumber, appVerifier)
+        .then((confirmationResult) => {
+          window.confirmationResult = confirmationResult;
+          alert("OTP भेज दिया गया!");
+          otpBox.style.display = "block";
+        })
+        .catch((error) => {
+          alert("OTP भेजने में Error: " + error.message);
+        });
+    });
 
-      recaptchaVerifier = new RecaptchaVerifier('recaptcha-container', {
-        'size': 'invisible',
-        'callback': (response) => {
-          // reCAPTCHA solved — will proceed with send OTP
-          console.log('reCAPTCHA solved');
-        }
-      }, auth);
+    // OTP Verify करना
+    verifyOtpBtn.addEventListener("click", () => {
+      const code = document.getElementById("otp").value;
+      window.confirmationResult.confirm(code)
+        .then((result) => {
+          const user = result.user;
+          alert("Login Successful!");
+          showUserPanel(user);
+        })
+        .catch((error) => {
+          alert("गलत OTP! कृपया दुबारा कोशिश करें।");
+        });
+    });
 
-      // Render (optional explicit render)
-      recaptchaVerifier.render().then(widgetId => {
-        console.log('reCAPTCHA rendered', widgetId);
-      });
-
-      return recaptchaVerifier;
+    // User Panel दिखाना
+    function showUserPanel(user) {
+      document.getElementById("loginBox").style.display = "none";
+      userPanel.style.display = "block";
+      userNumber.innerText = "Your Number: " + user.phoneNumber;
     }
 
-    // Send OTP
-    sendOtpBtn.addEventListener('click', async () => {
-      const phoneNumber = phoneInput.value.trim();
-      if (!phoneNumber) return alert('Phone number dalna zaroori hai, country code ke sath.');
-
-      try {
-        initRecaptcha();
-        const appVerifier = recaptchaVerifier;
-        const result = await signInWithPhoneNumber(auth, phoneNumber, appVerifier);
-        confirmationResultGlobal = result; // save to confirm later
-        stepPhone.classList.add('hidden');
-        stepOtp.classList.remove('hidden');
-        alert('OTP bhej diya gaya. Check your SMS.');
-      } catch (err) {
-        console.error('Error sending OTP', err);
-        alert('OTP bhejne mein error: ' + (err.message || err));
-        // reCAPTCHA reset for retry
-        if (recaptchaVerifier) recaptchaVerifier.clear && recaptchaVerifier.clear();
-        recaptchaVerifier = null;
-      }
-    });
-
-    // Verify OTP
-    verifyOtpBtn.addEventListener('click', async () => {
-      const code = otpInput.value.trim();
-      if (!code) return alert('OTP daalo');
-      if (!confirmationResultGlobal) return alert('OTP bhejne se pehle phone number bhejo.');
-
-      try {
-        const credential = await confirmationResultGlobal.confirm(code);
-        // User signed in successfully.
-        alert('Login successful');
-      } catch (err) {
-        console.error('OTP verify error', err);
-        alert('OTP verify error: ' + (err.message || err));
-      }
-    });
-
-    // Resend: reinitialize recaptcha and send again
-    resendBtn.addEventListener('click', async () => {
-      if (!phoneInput.value.trim()) return alert('Phone number pehle daalo.');
-      if (recaptchaVerifier) { recaptchaVerifier.clear && recaptchaVerifier.clear(); recaptchaVerifier = null; }
-      sendOtpBtn.click();
-    });
-
     // Logout
-    logoutBtn.addEventListener('click', async () => {
-      await signOut(auth);
+    logoutBtn.addEventListener("click", () => {
+      signOut(auth);
     });
 
-    // Auth state changes
+    // Auth State change
     onAuthStateChanged(auth, (user) => {
       if (user) {
-        // Note: for phone auth, user.phoneNumber contains the signed-in phone
-        const phone = user.phoneNumber || 'Unknown';
-        userInfo.innerHTML = `<p>Logged in: <strong>${phone}</strong></p>`;
-        logoutBtn.classList.remove('hidden');
-
-        // Show admin or user panel based on phone
-        if (phone === ADMIN_PHONE) {
-          adminPanel.classList.remove('hidden');
-          userPanel.classList.add('hidden');
-        } else {
-          adminPanel.classList.add('hidden');
-          userPanel.classList.remove('hidden');
-        }
-
-        // Hide OTP UI
-        stepPhone.classList.add('hidden');
-        stepOtp.classList.add('hidden');
+        showUserPanel(user);
       } else {
-        userInfo.innerHTML = `<p>Not logged in</p>`;
-        logoutBtn.classList.add('hidden');
-        adminPanel.classList.add('hidden');
-        userPanel.classList.add('hidden');
-
-        // Show phone entry UI again
-        stepPhone.classList.remove('hidden');
-        stepOtp.classList.add('hidden');
+        document.getElementById("loginBox").style.display = "block";
+        userPanel.style.display = "none";
       }
     });
-
   </script>
 </body>
 </html>
