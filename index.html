@@ -1,401 +1,130 @@
 <meta name='viewport' content='width=device-width, initial-scale=1'/><!DOCTYPE html>
-<html lang="hi">
+<html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>InfernoX Store — Admin + Store</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>V Tok Store Login</title>
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+  import { getAuth, RecaptchaVerifier, signInWithPhoneNumber, onAuthStateChanged, signOut } 
+    from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
-  <script type="module">
-    // Firebase v10 modular imports
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import {
-      getAuth,
-      GoogleAuthProvider,
-      signInWithPopup,
-      signOut,
-      onAuthStateChanged
-    } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-    import {
-      getFirestore,
-      collection,
-      addDoc,
-      onSnapshot,
-      doc,
-      setDoc,
-      deleteDoc,
-      updateDoc
-    } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+  const firebaseConfig = {
+    apiKey: "AIzaSyBtYFjOBAuDQkcrwKRKP4FzbSb5N5pudYk",
+    authDomain: "v-tok-d78ad.firebaseapp.com",
+    projectId: "v-tok-d78ad",
+    storageBucket: "v-tok-d78ad.firebasestorage.app",
+    messagingSenderId: "448669303511",
+    appId: "1:448669303511:web:7af9fec0b6e0f981eaa692",
+    measurementId: "G-ZJ2L4E58T1"
+  };
 
-    // ---------- 🔥 Firebase config (tumhara diya hua) ----------
-    const firebaseConfig = {
-      apiKey: "AIzaSyBtYFjOBAuDQkcrwKRKP4FzbSb5N5pudYk",
-      authDomain: "v-tok-d78ad.firebaseapp.com",
-      projectId: "v-tok-d78ad",
-      storageBucket: "v-tok-d78ad.firebasestorage.app",
-      messagingSenderId: "448669303511",
-      appId: "1:448669303511:web:7af9fec0b6e0f981eaa692",
-      measurementId: "G-ZJ2L4E58T1"
-    };
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
 
-    // ---------- Initialize ----------
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-    const provider = new GoogleAuthProvider();
-    const db = getFirestore(app);
+  // ✅ Admin phone (change as you want)
+  const adminPhone = "+919876543210"; // yahan apna admin number likho (with +91)
 
-    // Admin email (जो special admin है)
-    const ADMIN_EMAIL = "oa2982458@gmail.com";
-
-    // Global state
-    let currentUser = null;
-    let isAdmin = false;
-
-    // Elements (will be available after DOM load)
-    window.onload = () => {
-      // Auth buttons
-      window.signInWithGoogle = signInWithGoogle;
-      window.signOutUser = signOutUser;
-
-      // Admin actions
-      window.addProduct = addProduct;
-      window.deleteProduct = deleteProduct;
-      window.updateShayari = updateShayari;
-
-      // Start listeners only after auth state resolved by onAuthStateChanged
-    };
-
-    // ---------- Auth ----------
-    async function signInWithGoogle() {
-      try {
-        await signInWithPopup(auth, provider);
-        // onAuthStateChanged will handle UI
-      } catch (err) {
-        alert("Login failed: " + err.message);
-      }
-    }
-
-    async function signOutUser() {
-      await signOut(auth);
-      // UI handled by onAuthStateChanged
-    }
-
-    // ---------- Auth state listener ----------
-    onAuthStateChanged(auth, (user) => {
-      currentUser = user;
-      if (user) {
-        isAdmin = (user.email === ADMIN_EMAIL);
-        document.getElementById("userName").innerText = user.displayName || user.email;
-        document.getElementById("userPhoto").src = user.photoURL || "";
-        showAppropriatePanel();
-        startRealtimeListeners(); // start listening to Firestore
-      } else {
-        isAdmin = false;
-        currentUser = null;
-        document.getElementById("userName").innerText = "";
-        document.getElementById("userPhoto").src = "";
-        showAppropriatePanel();
-        stopRealtimeListeners(); // optional: detach listeners if you want
-      }
+  window.onload = function() {
+    window.recaptchaVerifier = new RecaptchaVerifier(auth, "recaptcha-container", {
+      size: "normal",
+      callback: () => console.log("reCAPTCHA solved!"),
     });
+  }
 
-    // ---------- UI control ----------
-    function showAppropriatePanel() {
-      if (!currentUser) {
-        document.querySelector(".login-page").style.display = "block";
-        document.querySelector(".home-page").style.display = "none";
-        document.querySelector(".admin-page").style.display = "none";
-      } else if (isAdmin) {
-        document.querySelector(".login-page").style.display = "none";
-        document.querySelector(".home-page").style.display = "none";
-        document.querySelector(".admin-page").style.display = "block";
+  // Send OTP
+  window.sendOTP = function() {
+    const phoneNumber = document.getElementById("phone").value;
+    const appVerifier = window.recaptchaVerifier;
+    signInWithPhoneNumber(auth, phoneNumber, appVerifier)
+      .then((confirmationResult) => {
+        window.confirmationResult = confirmationResult;
+        document.getElementById("otpSection").style.display = "block";
+        alert("OTP sent successfully!");
+      })
+      .catch((error) => {
+        alert("Error: " + error.message);
+      });
+  };
+
+  // Verify OTP
+  window.verifyOTP = function() {
+    const code = document.getElementById("otp").value;
+    confirmationResult.confirm(code).then((result) => {
+      const user = result.user;
+      if (user.phoneNumber === adminPhone) {
+        document.getElementById("adminPanel").style.display = "block";
+        document.getElementById("loginSection").style.display = "none";
       } else {
-        document.querySelector(".login-page").style.display = "none";
-        document.querySelector(".home-page").style.display = "block";
-        document.querySelector(".admin-page").style.display = "none";
+        document.getElementById("userHome").style.display = "block";
+        document.getElementById("loginSection").style.display = "none";
       }
-    }
+    }).catch((error) => {
+      alert("Invalid OTP");
+    });
+  };
 
-    // ---------- Firestore: collections & listeners ----------
-    const productsCol = collection(db, "products");
-    const shayariDocRef = doc(db, "appMeta", "shayari"); // store shayari details here
+  // Logout
+  window.logout = function() {
+    signOut(auth).then(() => location.reload());
+  };
+</script>
 
-    let unsubscribeProducts = null;
-    let unsubscribeShayari = null;
-
-    function startRealtimeListeners() {
-      // products realtime
-      unsubscribeProducts = onSnapshot(productsCol, (snapshot) => {
-        const listEl = document.getElementById("productsList");
-        const userListEl = document.getElementById("userProductsList");
-        listEl.innerHTML = "";
-        userListEl.innerHTML = "";
-
-        snapshot.forEach(docSnap => {
-          const data = docSnap.data();
-          const id = docSnap.id;
-
-          // Admin list (with edit/delete)
-          const item = document.createElement("div");
-          item.className = "product-item";
-          item.innerHTML = `
-            <img src="${data.image || 'https://via.placeholder.com/120'}" />
-            <div class="info">
-              <strong>${escapeHtml(data.name)}</strong>
-              <div>₹ ${data.price}</div>
-              <div>${escapeHtml(data.description || "")}</div>
-            </div>
-            <div class="actions">
-              <button onclick="populateEditForm('${id}')">Edit</button>
-              <button onclick="deleteProduct('${id}')">Delete</button>
-            </div>
-          `;
-          listEl.appendChild(item);
-
-          // User list (simple card)
-          const card = document.createElement("div");
-          card.className = "app-card";
-          card.innerHTML = `
-            <img src="${data.image || 'https://via.placeholder.com/150'}" alt="${escapeHtml(data.name)}">
-            <h4>${escapeHtml(data.name)}</h4>
-            <p>₹ ${data.price}</p>
-            <button onclick="buyProduct('${id}')">Buy</button>
-          `;
-          userListEl.appendChild(card);
-        });
-      }, (err) => {
-        console.error("products listener error:", err);
-      });
-
-      // shayari realtime
-      unsubscribeShayari = onSnapshot(shayariDocRef, (docSnap) => {
-        const data = docSnap.exists() ? docSnap.data() : { title: "", lines: "" };
-        document.getElementById("shayariTitle").innerText = data.title || "";
-        document.getElementById("shayariLines").innerText = data.lines || "";
-        // admin form populate
-        const t = document.getElementById("shayariTitleInput");
-        const l = document.getElementById("shayariLinesInput");
-        if (t) t.value = data.title || "";
-        if (l) l.value = data.lines || "";
-      }, (err) => {
-        console.error("shayari listener error:", err);
-      });
-    }
-
-    function stopRealtimeListeners() {
-      if (unsubscribeProducts) unsubscribeProducts();
-      if (unsubscribeShayari) unsubscribeShayari();
-      unsubscribeProducts = null;
-      unsubscribeShayari = null;
-    }
-
-    // ---------- Admin actions ----------
-    // Add new product (from admin form)
-    async function addProduct() {
-      const name = document.getElementById("prodName").value.trim();
-      const price = Number(document.getElementById("prodPrice").value);
-      const image = document.getElementById("prodImage").value.trim();
-      const desc = document.getElementById("prodDesc").value.trim();
-
-      if (!name || !price) {
-        alert("Name और Price जरूरी है");
-        return;
-      }
-
-      try {
-        await addDoc(productsCol, {
-          name,
-          price,
-          image: image || "",
-          description: desc || "",
-          createdAt: new Date()
-        });
-        // clear form
-        document.getElementById("prodName").value = "";
-        document.getElementById("prodPrice").value = "";
-        document.getElementById("prodImage").value = "";
-        document.getElementById("prodDesc").value = "";
-      } catch (err) {
-        alert("Add product failed: " + err.message);
-      }
-    }
-
-    // Delete product
-    async function deleteProduct(id) {
-      if (!confirm("Delete this product?")) return;
-      try {
-        await deleteDoc(doc(db, "products", id));
-      } catch (err) {
-        alert("Delete failed: " + err.message);
-      }
-    }
-
-    // Populate edit form (admin)
-    window.populateEditForm = async function(id) {
-      const dref = doc(db, "products", id);
-      // We fetch current doc snapshot from realtime snapshot list so simpler is to read fields from DOM.
-      // For simplicity open an edit prompt:
-      const newName = prompt("New name:");
-      if (newName === null) return;
-      const newPrice = prompt("New price:");
-      if (newPrice === null) return;
-      try {
-        await updateDoc(dref, { name: newName, price: Number(newPrice) });
-      } catch (err) {
-        alert("Update failed: " + err.message);
-      }
-    };
-
-    // Update shayari details (admin)
-    async function updateShayari() {
-      const title = document.getElementById("shayariTitleInput").value.trim();
-      const lines = document.getElementById("shayariLinesInput").value.trim();
-
-      try {
-        await setDoc(shayariDocRef, {
-          title,
-          lines,
-          updatedAt: new Date()
-        }, { merge: true });
-        alert("Shayari updated");
-      } catch (err) {
-        alert("Update shayari failed: " + err.message);
-      }
-    }
-
-    // ---------- User action: buy (demo) ----------
-    window.buyProduct = function(id) {
-      if (!currentUser) {
-        alert("Please login to buy.");
-        return;
-      }
-      alert("Simulated purchase for product id: " + id + "\n(You can connect real payments later.)");
-    };
-
-    // ---------- small helper ----------
-    function escapeHtml(str) {
-      if (!str) return "";
-      return String(str).replace(/[&<>"']/g, function (s) {
-        return ({
-          '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
-        })[s];
-      });
-    }
-  </script>
-
-  <style>
-    body { font-family: "Poppins", sans-serif; margin:0; background:#f5f5f5; color:#222; }
-    .topbar { background:#34a853; color:white; padding:12px 16px; display:flex; justify-content:space-between; align-items:center; }
-    .container { padding:18px; max-width:1100px; margin:18px auto; }
-    button { cursor:pointer; border: none; border-radius:8px; padding:8px 12px; background:#4285f4; color:white; }
-    .login-page { text-align:center; padding:40px; background:white; max-width:480px; margin:80px auto; border-radius:12px; box-shadow:0 8px 20px rgba(0,0,0,0.08); }
-    .admin-page, .home-page { display:none; }
-    .admin-grid { display:grid; grid-template-columns: 1fr 1fr; gap:16px; align-items:start; }
-    .card { background:white; padding:12px; border-radius:10px; box-shadow:0 6px 18px rgba(0,0,0,0.06); }
-    .product-item { display:flex; gap:12px; align-items:center; padding:8px; border-bottom:1px solid #eee; }
-    .product-item img { width:80px; height:80px; object-fit:cover; border-radius:8px; }
-    .product-item .info { flex:1; }
-    .app-card { background:white; border-radius:10px; padding:10px; text-align:center; box-shadow:0 6px 18px rgba(0,0,0,0.06); }
-    .app-card img { width:100%; height:110px; object-fit:cover; border-radius:8px; }
-    input, textarea { width:100%; padding:8px; margin:6px 0 10px 0; border-radius:8px; border:1px solid #ddd; font-size:14px; }
-    .small { font-size:13px; color:#666; }
-    .user-info { display:flex; align-items:center; gap:10px; }
-    .user-info img { width:36px; height:36px; border-radius:50%; }
-    .products-grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(160px,1fr)); gap:16px; }
-  </style>
+<style>
+body {
+  font-family: Poppins, sans-serif;
+  background: #f3f4f6;
+  margin: 0;
+  padding: 20px;
+  text-align: center;
+}
+.card {
+  background: white;
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 3px 8px rgba(0,0,0,0.2);
+  display: inline-block;
+  max-width: 400px;
+}
+button {
+  background: #007bff;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  margin-top: 10px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+button:hover { background: #0056b3; }
+</style>
 </head>
 
 <body>
-  <!-- Top bar (visible when logged in) -->
-  <div class="topbar" id="topbar" style="display:none;">
-    <div style="display:flex; align-items:center; gap:12px;">
-      <strong>InfernoX Store</strong>
-      <div id="userMeta" class="user-info" style="margin-left:12px;">
-        <img id="userPhoto" src="" alt="user" />
-        <span id="userName"></span>
-      </div>
-    </div>
-    <div>
-      <button onclick="signOutUser()">Logout</button>
+
+  <div id="loginSection" class="card">
+    <h2>Login with Phone OTP</h2>
+    <input id="phone" type="text" placeholder="+91XXXXXXXXXX"><br>
+    <div id="recaptcha-container"></div>
+    <button onclick="sendOTP()">Send OTP</button>
+
+    <div id="otpSection" style="display:none;">
+      <input id="otp" type="text" placeholder="Enter OTP"><br>
+      <button onclick="verifyOTP()">Verify OTP</button>
     </div>
   </div>
 
-  <!-- LOGIN PAGE -->
-  <div class="login-page">
-    <h2>Login to InfernoX Store</h2>
-    <p>Sign in with your Google account</p>
-    <button onclick="signInWithGoogle()">🔐 Sign in with Google</button>
-    <p class="small" style="margin-top:12px;">Admin email: <strong>oa2982458@gmail.com</strong></p>
-  </div>
-
-  <!-- ADMIN PAGE -->
-  <div class="admin-page container">
+  <div id="adminPanel" class="card" style="display:none;">
     <h2>Admin Panel</h2>
-
-    <div class="admin-grid">
-      <!-- left: products management -->
-      <div class="card">
-        <h3>Products (Add / Remove)</h3>
-        <div>
-          <input id="prodName" placeholder="Product name" />
-          <input id="prodPrice" placeholder="Price (₹)" type="number" />
-          <input id="prodImage" placeholder="Image URL (or leave blank)" />
-          <textarea id="prodDesc" rows="3" placeholder="Short description"></textarea>
-          <button onclick="addProduct()">Add Product</button>
-        </div>
-
-        <hr style="margin:12px 0;" />
-        <div id="productsList" style="max-height:350px; overflow:auto;"></div>
-      </div>
-
-      <!-- right: shayari / realtime details -->
-      <div class="card">
-        <h3>Shayari Details (Real-time)</h3>
-        <input id="shayariTitleInput" placeholder="Title" />
-        <textarea id="shayariLinesInput" rows="6" placeholder="Shayari lines..."></textarea>
-        <button onclick="updateShayari()">Update Shayari</button>
-
-        <hr style="margin:12px 0;" />
-        <h4>Preview</h4>
-        <div class="card small">
-          <strong id="shayariTitle"></strong>
-          <p id="shayariLines"></p>
-        </div>
-      </div>
-    </div>
+    <p>Welcome, Admin! 🎯</p>
+    <p>Yahan par tum apne store ke saman, orders aur users ka real-time data dikha sakti ho.</p>
+    <button onclick="logout()">Logout</button>
   </div>
 
-  <!-- HOME PAGE (for normal users) -->
-  <div class="home-page container">
-    <h2>Store Home</h2>
-    <div class="card">
-      <h3>Featured Shayari</h3>
-      <div class="card small">
-        <strong id="shayariTitle"></strong>
-        <p id="shayariLines"></p>
-      </div>
-    </div>
-
-    <div style="height:14px;"></div>
-
-    <div class="card">
-      <h3>Products</h3>
-      <div id="userProductsList" class="products-grid" style="margin-top:12px;"></div>
-    </div>
+  <div id="userHome" class="card" style="display:none;">
+    <h2>Welcome to V Tok Store</h2>
+    <p>Ye normal user ka home page hai (Play Store style bana sakti ho).</p>
+    <button onclick="logout()">Logout</button>
   </div>
 
-  <script>
-    // Show/hide topbar when user logs in/out
-    // This small piece runs after module auth state updates DOM
-    const observer = new MutationObserver(() => {
-      const top = document.getElementById('topbar');
-      const login = document.querySelector('.login-page');
-      if (login && login.style.display === "none") {
-        top.style.display = "flex";
-      } else {
-        top.style.display = "none";
-      }
-    });
-    observer.observe(document.body, { childList: true, subtree: true });
-  </script>
 </body>
 </html>
