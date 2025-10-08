@@ -1,561 +1,651 @@
 <meta name='viewport' content='width=device-width, initial-scale=1'/><!DOCTYPE html>
 <html lang="hi">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>InfernoX Chat Store (Demo)</title>
-<style>
-  body{font-family:Poppins,system-ui; margin:0;background:#f3f6fb;color:#222}
-  .topbar{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;background:#34a853;color:#fff}
-  .container{max-width:1100px;margin:18px auto;padding:12px}
-  .card{background:#fff;padding:12px;border-radius:10px;box-shadow:0 6px 18px rgba(0,0,0,0.06)}
-  .row{display:flex;gap:12px}
-  .col{flex:1}
-  .users-list,.messages{max-height:60vh;overflow:auto;padding:8px;display:flex;flex-direction:column;gap:10px}
-  .user-item{display:flex;align-items:center;gap:10px;padding:8px;border-radius:8px;cursor:pointer}
-  .user-item:hover{background:#f0f6f3}
-  .avatar{width:42px;height:42px;border-radius:50%;background:#ddd;display:flex;align-items:center;justify-content:center;font-weight:700}
-  .msg{-webkit-align-self:flex-start;border-radius:8px;padding:8px;max-width:75%}
-  .msg.me{background:#34a853;color:#fff;align-self:flex-end}
-  .msg.other{background:#eee;color:#111}
-  .input-row{display:flex;gap:8px;margin-top:8px}
-  button{background:#4285f4;color:#fff;border:none;padding:8px 10px;border-radius:8px;cursor:pointer}
-  input,textarea{padding:8px;border-radius:8px;border:1px solid #ddd}
-  .hidden{display:none}
-  .call-btn{background:#ff6b6b}
-</style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>InfernoX Chat Multi-Page SPA</title>
+  <style>
+    :root{--green:#34a853;--blue:#4285f4;--muted:#666}
+    body{font-family:Inter, Poppins, system-ui; margin:0; background:#f5f7fb; color:#111}
+    .topbar{background:var(--green); color:#fff; padding:10px 16px; display:flex; align-items:center; justify-content:space-between}
+    .brand{font-weight:700}
+    .container{max-width:1100px;margin:18px auto;padding:12px}
+    .row{display:flex;gap:12px}
+    .card{background:#fff;padding:12px;border-radius:10px;box-shadow:0 8px 20px rgba(12,18,30,0.06)}
+    button{background:var(--blue);color:#fff;border:none;padding:8px 12px;border-radius:8px;cursor:pointer}
+    input, textarea{padding:8px;border-radius:8px;border:1px solid #e6eef6}
+    .hidden{display:none}
+    .users-list{display:flex;flex-direction:column;gap:8px;max-height:66vh;overflow:auto;margin-top:8px}
+    .user-item{display:flex;align-items:center;gap:10px;padding:8px;border-radius:8px;cursor:pointer}
+    .user-item:hover{background:#f0f6f3}
+    .avatar{width:44px;height:44px;border-radius:50%;background:#ddd;display:flex;align-items:center;justify-content:center;font-weight:700}
+    .app-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+    .app-card{background:#fff;padding:12px;border-radius:10px;text-align:center}
+    .messages{display:flex;flex-direction:column;gap:8px;overflow:auto;max-height:60vh;padding:8px}
+    .msg{max-width:70%;padding:8px;border-radius:10px}
+    .msg.me{background:var(--green);color:#fff;align-self:flex-end}
+    .msg.other{background:#eee;align-self:flex-start}
+    .small{font-size:13px;color:var(--muted)}
+    .nav {display:flex; gap:8px;}
+    .profile-preview img{width:80px;height:80px;border-radius:12px;object-fit:cover}
+    .call-video{width:100%;height:180px;background:#000}
+    footer{padding:12px;text-align:center;color:#666}
+  </style>
 </head>
 <body>
-
-<div class="topbar">
-  <div><strong>InfernoX Chat</strong></div>
-  <div id="authArea">
-    <span id="userNameTop"></span>
-    <button id="loginBtn">Sign in with Google</button>
-    <button id="logoutBtn" class="hidden">Logout</button>
-  </div>
-</div>
-
-<div class="container">
-  <!-- LOGIN NOTICE -->
-  <div id="loginPanel" class="card" style="text-align:center">
-    <h3>Login karo Google se</h3>
-    <p>Login karne ke baad aap username set kar sakte ho, doston ko search karo aur chat shuru karo.</p>
-    <button id="googleSign">Sign in with Google</button>
-  </div>
-
-  <!-- APP LAYOUT -->
-  <div id="appPanel" class="hidden">
-    <div class="row">
-      <!-- LEFT: contacts/search -->
-      <div style="width:320px">
-        <div class="card">
-          <div style="display:flex;gap:8px;align-items:center">
-            <div class="avatar" id="myAvatar">U</div>
-            <div>
-              <div id="myDisplayName" style="font-weight:700"></div>
-              <div id="myUid" style="font-size:12px;color:#666"></div>
-            </div>
-          </div>
-
-          <hr>
-          <div>
-            <input id="usernameInput" placeholder="Set username (unique)" />
-            <button id="setUsernameBtn">Save Username</button>
-          </div>
-
-          <hr>
-          <div>
-            <input id="searchUser" placeholder="Search friend by username" />
-          </div>
-          <div style="margin-top:8px" class="users-list card" id="usersList"></div>
-        </div>
-
-        <div style="margin-top:12px" class="card">
-          <h4>Recent Chats</h4>
-          <div id="recentList" class="users-list"></div>
-        </div>
+  <div class="topbar">
+    <div class="brand">InfernoX — Chat & Store</div>
+    <div style="display:flex;align-items:center;gap:12px">
+      <div id="topUser" style="display:flex;align-items:center;gap:8px">
+        <div class="avatar" id="topAvatar">U</div>
+        <div id="topName" style="font-weight:600"></div>
       </div>
-
-      <!-- MIDDLE: chat area -->
-      <div class="col">
-        <div class="card" style="display:flex;flex-direction:column;height:80vh">
-          <div style="display:flex;align-items:center;justify-content:space-between">
-            <div>
-              <strong id="chatWithName">Select a friend to chat</strong><br>
-              <small id="chatWithUid" style="color:#555"></small>
-            </div>
-            <div>
-              <button id="audioCallBtn" class="call-btn hidden">Audio Call</button>
-              <button id="videoCallBtn" class="call-btn hidden">Video Call</button>
-            </div>
-          </div>
-
-          <div id="messages" class="messages" style="flex:1;margin-top:8px"></div>
-
-          <div class="input-row">
-            <input id="msgInput" placeholder="Type message..." style="flex:1" />
-            <input type="file" id="fileInput" />
-            <button id="sendBtn">Send</button>
-          </div>
-        </div>
-      </div>
-
-      <!-- RIGHT: optional video area -->
-      <div style="width:320px">
-        <div class="card" id="videoCard">
-          <h4>Call</h4>
-          <video id="localVideo" autoplay muted playsinline style="width:100%;background:#000;height:180px"></video>
-          <video id="remoteVideo" autoplay playsinline style="width:100%;background:#000;height:180px;margin-top:8px"></video>
-          <div style="margin-top:8px">
-            <button id="endCallBtn" class="hidden">End Call</button>
-          </div>
-        </div>
-
-        <div style="margin-top:12px" class="card">
-          <h4>Info / Tips</h4>
-          <small>App ko HTTPS par host karo. WebRTC calls ke liye permissions allow karo.</small>
-        </div>
+      <div class="nav">
+        <button onclick="navTo('#/users')">Users</button>
+        <button onclick="navTo('#/profile')">Profile</button>
+        <button onclick="navTo('#/calls')">Calls</button>
+        <button id="signOutBtn" class="hidden">Logout</button>
       </div>
     </div>
   </div>
-</div>
 
-<!-- Firebase + App script -->
-<script type="module">
-/* =========================
-   IMPORTANT: Change nothing above without reading.
-   This file is a starter chat + call app using:
-   - Firebase Auth (Google)
-   - Firestore for users, chats, signaling
-   - Storage for files
-   - WebRTC (signaling via Firestore)
-   ========================= */
+  <div class="container">
+    <!-- LOGIN -->
+    <div id="loginCard" class="card" style="text-align:center;">
+      <h2>Login with Google</h2>
+      <p class="small">Use your Google account. Make sure Google sign-in enabled in Firebase console.</p>
+      <button id="googleLoginBtn">🔐 Sign in with Google</button>
+    </div>
 
-/* ---------- Firebase config (YOUR project — using your earlier values) ---------- */
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-import {
-  getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged
-} from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-import {
-  getFirestore, doc, setDoc, getDoc, collection, query, where, onSnapshot, addDoc, orderBy, serverTimestamp, limit
-} from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-import { getStorage, ref as sref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-storage.js";
+    <!-- USERS PAGE -->
+    <div id="usersPage" class="hidden">
+      <div class="row">
+        <div style="width:360px">
+          <div class="card">
+            <div style="display:flex;align-items:center;gap:10px">
+              <div class="avatar" id="myAvatar">U</div>
+              <div>
+                <div id="myName" style="font-weight:700">User</div>
+                <div id="myMail" class="small"></div>
+              </div>
+            </div>
 
-const firebaseConfig = {
-  apiKey: "AIzaSyBtYFjOBAuDQkcrwKRKP4FzbSb5N5pudYk",
-  authDomain: "v-tok-d78ad.firebaseapp.com",
-  projectId: "v-tok-d78ad",
-  storageBucket: "v-tok-d78ad.firebasestorage.app",
-  messagingSenderId: "448669303511",
-  appId: "1:448669303511:web:7af9fec0b6e0f981eaa692",
-  measurementId: "G-ZJ2L4E58T1"
-};
+            <hr/>
+            <div>
+              <input id="searchBox" placeholder="Search users by username or name" style="width:100%" />
+            </div>
 
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const provider = new GoogleAuthProvider();
-const db = getFirestore(app);
-const storage = getStorage(app);
+            <div class="users-list card" id="usersList"></div>
+          </div>
+        </div>
 
-/* ---------- UI refs ---------- */
-const loginPanel = document.getElementById('loginPanel');
-const appPanel = document.getElementById('appPanel');
-const googleSign = document.getElementById('googleSign');
-const loginBtn = document.getElementById('loginBtn');
-const logoutBtn = document.getElementById('logoutBtn');
-const userNameTop = document.getElementById('userNameTop');
-const myAvatar = document.getElementById('myAvatar');
-const myDisplayName = document.getElementById('myDisplayName');
-const myUid = document.getElementById('myUid');
-const myDisplayTop = document.getElementById('userNameTop');
-const setUsernameBtn = document.getElementById('setUsernameBtn');
-const usernameInput = document.getElementById('usernameInput');
-const usersList = document.getElementById('usersList');
-const searchUser = document.getElementById('searchUser');
-const messagesEl = document.getElementById('messages');
-const sendBtn = document.getElementById('sendBtn');
-const msgInput = document.getElementById('msgInput');
-const fileInput = document.getElementById('fileInput');
-const chatWithName = document.getElementById('chatWithName');
-const chatWithUid = document.getElementById('chatWithUid');
-const audioCallBtn = document.getElementById('audioCallBtn');
-const videoCallBtn = document.getElementById('videoCallBtn');
-const localVideo = document.getElementById('localVideo');
-const remoteVideo = document.getElementById('remoteVideo');
-const endCallBtn = document.getElementById('endCallBtn');
-const recentList = document.getElementById('recentList');
+        <div style="flex:1">
+          <div class="card">
+            <h3>Instructions</h3>
+            <p class="small">Click any user to open chat page. Use top nav to go to profile and calls. Profile lets you set username & upload image.</p>
+            <hr/>
+            <h4>Recent chats</h4>
+            <div id="recentContainer" class="users-list"></div>
+          </div>
+        </div>
+      </div>
+    </div>
 
-/* ---------- state ---------- */
-let currentUser = null;
-let currentChatId = null;
-let currentPeerUid = null;
-let unsubscribeMessages = null;
-let unsubscribeUsers = null;
+    <!-- CHAT PAGE -->
+    <div id="chatPage" class="hidden">
+      <div class="row">
+        <div style="flex:1" class="card">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <div>
+              <div style="font-weight:700" id="chatTitle">Chat</div>
+              <div class="small" id="chatSubtitle"></div>
+            </div>
+            <div>
+              <button id="callAudioBtn">Audio</button>
+              <button id="callVideoBtn">Video</button>
+              <button onclick="navTo('#/users')">Back</button>
+            </div>
+          </div>
 
-/* ---------- Authentication ---------- */
-async function startGoogleSignIn(){
-  try {
-    await signInWithPopup(auth, provider);
-  } catch (err) {
-    alert("Login failed: " + err.message);
-  }
-}
-googleSign.onclick = startGoogleSignIn;
-loginBtn.onclick = startGoogleSignIn;
+          <div id="messages" class="messages" style="margin-top:8px"></div>
 
-logoutBtn.onclick = async () => {
-  await signOut(auth);
-  location.reload();
-};
+          <div style="display:flex;gap:8px;margin-top:8px;align-items:center">
+            <input id="messageInput" placeholder="Type a message" style="flex:1" />
+            <input type="file" id="filePicker" />
+            <button id="sendMsgBtn">Send</button>
+          </div>
+        </div>
 
-/* on auth change */
-onAuthStateChanged(auth, async (user) => {
-  currentUser = user;
-  if (user) {
-    userNameTop.textContent = user.displayName || user.email;
-    loginPanel.classList.add('hidden');
-    appPanel.classList.remove('hidden');
-    document.getElementById('loginPanel').style.display = 'none';
-    document.getElementById('authArea').querySelector('#logoutBtn').classList.remove('hidden');
+        <div style="width:320px" class="card">
+          <h4>Conversation Info</h4>
+          <div id="convInfo" class="small"></div>
+          <hr/>
+          <div id="convFiles"></div>
+        </div>
+      </div>
+    </div>
 
-    // show avatar & name
-    myAvatar.textContent = (user.displayName||'U')[0].toUpperCase();
-    myDisplayName.textContent = user.displayName;
-    myUid.textContent = `UID: ${user.uid}`;
+    <!-- PROFILE PAGE -->
+    <div id="profilePage" class="hidden">
+      <div class="card">
+        <h3>My Profile</h3>
+        <div style="display:flex;gap:12px;align-items:center">
+          <div class="profile-preview">
+            <img id="profileImg" src="" alt="profile" style="width:120px;height:120px;border-radius:12px;object-fit:cover"/>
+          </div>
+          <div style="flex:1">
+            <div><strong id="profileNameDisplay">Name</strong></div>
+            <div class="small" id="profileEmail"></div>
 
-    // ensure user doc exists in Firestore (store displayName and email and username placeholder)
-    const userRef = doc(db, "users", user.uid);
-    const snapshot = await getDoc(userRef);
-    if (!snapshot.exists()) {
-      await setDoc(userRef, {
-        displayName: user.displayName || null,
-        email: user.email || null,
-        createdAt: serverTimestamp(),
-        username: null // user will set
-      });
-    } else {
-      const data = snapshot.data();
-      if (data.username) usernameInput.value = data.username;
-    }
+            <div style="margin-top:12px">
+              <input id="usernameSet" placeholder="Set username (unique)" />
+              <div style="margin-top:8px"><input type="file" id="profilePicInput" /></div>
+              <div style="margin-top:8px;">
+                <button id="saveProfileBtn">Save Profile</button>
+                <button onclick="navTo('#/users')">Back</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
 
-    // start listing users and recent chats
-    startUsersListener();
-    startRecentChatsListener();
-  } else {
-    // logged out
-    userNameTop.textContent = '';
-    loginPanel.classList.remove('hidden');
-    appPanel.classList.add('hidden');
-  }
-});
+    <!-- CALLS PAGE -->
+    <div id="callsPage" class="hidden">
+      <div class="row">
+        <div style="flex:1" class="card">
+          <h3>Calls (demo signaling)</h3>
+          <div style="display:flex;gap:8px;align-items:center">
+            <input id="callTarget" placeholder="Enter friend's UID to call" style="flex:1"/>
+            <button id="startVideoCallBtn">Start Video</button>
+            <button id="startAudioCallBtn">Start Audio</button>
+          </div>
+          <hr/>
+          <div>
+            <video id="localVid" class="call-video" autoplay muted playsinline></video>
+            <video id="remoteVid" class="call-video" autoplay playsinline style="margin-top:8px"></video>
+            <div style="margin-top:8px"><button id="hangupBtn" class="hidden">Hangup</button></div>
+          </div>
+        </div>
 
-/* ---------- Users search and list ---------- */
-function startUsersListener(){
-  // simple real-time list of all users (careful in prod: pagination required)
-  if (unsubscribeUsers) unsubscribeUsers();
-  const usersCol = collection(db, "users");
-  unsubscribeUsers = onSnapshot(usersCol, (snap) => {
-    usersList.innerHTML = '';
-    snap.forEach(docSnap => {
-      const d = docSnap.data();
-      const id = docSnap.id;
-      // don't list self
-      if (currentUser && id === currentUser.uid) return;
-      const node = document.createElement('div');
-      node.className = 'user-item';
-      node.innerHTML = `<div class="avatar">${(d.username || d.displayName || 'U')[0]?.toUpperCase()}</div>
-                        <div style="flex:1">
-                          <div style="font-weight:700">${d.username || d.displayName || 'Unnamed'}</div>
-                          <div style="font-size:12px;color:#666">${d.email || ''}</div>
-                        </div>`;
-      node.onclick = () => openChatWith(id, d.username || d.displayName || 'Friend');
-      usersList.appendChild(node);
-    });
-  });
-}
+        <div style="width:320px" class="card">
+          <h4>Incoming calls</h4>
+          <div id="incomingCalls" class="users-list"></div>
+        </div>
+      </div>
+    </div>
 
-/* Search by username (client-side) */
-searchUser.addEventListener('input', () => {
-  const q = searchUser.value.toLowerCase();
-  const items = usersList.querySelectorAll('.user-item');
-  items.forEach(it => {
-    const txt = it.innerText.toLowerCase();
-    it.style.display = txt.includes(q) ? '' : 'none';
-  });
-});
+  </div>
 
-/* ---------- Set username ---------- */
-setUsernameBtn.onclick = async () => {
-  const u = (usernameInput.value || '').trim();
-  if (!u) return alert('Username daalo');
-  // check unique: query users where username == u
-  const usersCol = collection(db, "users");
-  const q = query(usersCol, where("username",'==',u));
-  const snap = await getDocs(q).catch(()=>null);
-  // simpler: try to set directly (prod: enforce uniqueness via security rules/cloud function)
-  try {
-    await setDoc(doc(db,"users",currentUser.uid), { username: u }, { merge: true });
-    alert('Username saved');
-  } catch (e) {
-    alert('Error saving username: '+e.message);
-  }
-};
+  <footer>Built with Firebase — Make sure to host on HTTPS (Firebase Hosting recommended)</footer>
 
-/* ---------- Chats model ----------
-   We'll store chats as doc ID = ordered pair "uid1_uid2" (lexicographic) in collection "chats"
-   Each chat doc has subcollection "messages" with fields {from, text, type, createdAt, fileUrl}
-   ------------------------------------------------------------------ */
-import { getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+  <!-- Firebase + App Script -->
+  <script type="module">
+  // ----------------------------
+  // Firebase imports (modular v10)
+  // ----------------------------
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+  import {
+    getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged
+  } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+  import {
+    getFirestore, doc, setDoc, getDoc, collection, addDoc,
+    onSnapshot, query, where, orderBy, serverTimestamp, getDocs
+  } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+  import { getStorage, ref as sref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-storage.js";
 
-function chatDocId(a,b){
-  return a < b ? `${a}_${b}` : `${b}_${a}`;
-}
-
-/* Open chat with a friend */
-async function openChatWith(friendUid, friendName){
-  currentChatId = chatDocId(currentUser.uid, friendUid);
-  currentPeerUid = friendUid;
-  chatWithName.textContent = friendName;
-  chatWithUid.textContent = currentChatId;
-  messagesEl.innerHTML = '<small style="color:#888">Loading...</small>';
-  // show call buttons
-  audioCallBtn.classList.remove('hidden');
-  videoCallBtn.classList.remove('hidden');
-
-  // unsubscribe previous
-  if (unsubscribeMessages) unsubscribeMessages();
-
-  const messagesCol = collection(db, "chats", currentChatId, "messages");
-  const q = query(messagesCol, orderBy("createdAt"));
-  unsubscribeMessages = onSnapshot(q, (snap) => {
-    messagesEl.innerHTML = '';
-    snap.forEach(ms => {
-      const m = ms.data();
-      const div = document.createElement('div');
-      div.className = 'msg '+(m.from === currentUser.uid ? 'me' : 'other');
-      if (m.type === 'text') div.textContent = m.text;
-      else if (m.type === 'file') {
-        const a = document.createElement('a');
-        a.href = m.fileUrl; a.target='_blank';
-        a.textContent = m.fileName || 'File';
-        div.appendChild(a);
-      } else if (m.type === 'image') {
-        const img = document.createElement('img');
-        img.src = m.fileUrl; img.style.maxWidth='200px'; img.style.borderRadius='8px';
-        div.appendChild(img);
-      }
-      messagesEl.appendChild(div);
-    });
-    messagesEl.scrollTop = messagesEl.scrollHeight;
-  });
-}
-
-/* Send message */
-sendBtn.onclick = async () => {
-  if (!currentChatId) return alert('Pehle friend select karo');
-  const txt = msgInput.value.trim();
-  const file = fileInput.files[0];
-  if (!txt && !file) return;
-
-  const messagesColRef = collection(db, "chats", currentChatId, "messages");
-  let payload = { from: currentUser.uid, createdAt: serverTimestamp() };
-
-  if (file) {
-    // upload to storage
-    const path = `chatFiles/${currentChatId}/${Date.now()}_${file.name}`;
-    const sRef = sref(storage, path);
-    const snap = await uploadBytes(sRef, file);
-    const url = await getDownloadURL(snap.ref);
-    const mimetype = file.type;
-    if (mimetype.startsWith('image/')) {
-      payload.type = 'image';
-      payload.fileUrl = url;
-      payload.fileName = file.name;
-    } else {
-      payload.type = 'file';
-      payload.fileUrl = url;
-      payload.fileName = file.name;
-    }
-  } else {
-    payload.type = 'text';
-    payload.text = txt;
-  }
-
-  await addDoc(messagesColRef, payload);
-  msgInput.value = ''; fileInput.value = '';
-};
-
-/* ---------- Recent chats listener: show last message partner list ---------- */
-function startRecentChatsListener(){
-  // Simple method: query all chats where this user is participant (complex in prod)
-  // Here we will scan 'chats' collection and find docs with id containing current uid.
-  // Note: For large scale, keep per-user index/collection.
-  const chatsCol = collection(db, "chats");
-  onSnapshot(chatsCol, (snap) => {
-    recentList.innerHTML = '';
-    snap.forEach(docSnap => {
-      const id = docSnap.id;
-      if (!id.includes(currentUser.uid)) return;
-      // partner id:
-      const parts = id.split('_');
-      const partner = parts[0] === currentUser.uid ? parts[1] : parts[0];
-      // show partner
-      const node = document.createElement('div');
-      node.className = 'user-item';
-      node.innerHTML = `<div class="avatar">${partner[0]}</div><div style="flex:1"><div style="font-weight:700">${partner}</div><div style="font-size:12px;color:#666">${id}</div></div>`;
-      node.onclick = () => openChatWith(partner, partner);
-      recentList.appendChild(node);
-    });
-  });
-}
-
-/* ---------- Simple WebRTC signaling via Firestore (calls collection) ----------
-   Note: This is a simple approach for demo. In production use a proper signaling server.
-   Flow:
-   - Caller creates a 'call' doc with offer, callerUid, calleeUid
-   - Callee listens for call docs addressed to them, creates answer
-   - Both exchange ICE candidates under subcollections
-   ------------------------------------------------------------------------------ */
-let pc = null;
-let localStream = null;
-let remoteStream = null;
-let callDocRef = null;
-
-async function startLocalStream(isVideo){
-  try {
-    localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: isVideo });
-    localVideo.srcObject = localStream;
-  } catch (e) {
-    alert("Camera/Mic access denied: " + e.message);
-  }
-}
-
-async function startCall(isVideo){
-  if (!currentPeerUid) return alert('Select friend to call');
-  await startLocalStream(isVideo);
-  pc = new RTCPeerConnection();
-
-  // attach local tracks
-  localStream.getTracks().forEach(t => pc.addTrack(t, localStream));
-
-  // remote stream
-  remoteStream = new MediaStream();
-  remoteVideo.srcObject = remoteStream;
-  pc.ontrack = (e) => {
-    e.streams[0].getTracks().forEach(track => remoteStream.addTrack(track));
+  // ---------- your firebase config (you provided) ----------
+  const firebaseConfig = {
+    apiKey: "AIzaSyBtYFjOBAuDQkcrwKRKP4FzbSb5N5pudYk",
+    authDomain: "v-tok-d78ad.firebaseapp.com",
+    projectId: "v-tok-d78ad",
+    storageBucket: "v-tok-d78ad.firebasestorage.app",
+    messagingSenderId: "448669303511",
+    appId: "1:448669303511:web:7af9fec0b6e0f981eaa692",
+    measurementId: "G-ZJ2L4E58T1"
   };
 
-  // ICE candidates: add to firestore
-  const callsCol = collection(db, "calls");
-  callDocRef = await addDoc(callsCol, { caller: currentUser.uid, callee: currentPeerUid, createdAt: serverTimestamp() });
-  const offerCandidates = collection(db, "calls", callDocRef.id, "offerCandidates");
-  const answerCandidates = collection(db, "calls", callDocRef.id, "answerCandidates");
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const provider = new GoogleAuthProvider();
+  const db = getFirestore(app);
+  const storage = getStorage(app);
 
-  pc.onicecandidate = (event) => {
-    if (!event.candidate) return;
-    addDoc(offerCandidates, event.candidate.toJSON());
-  };
+  // ---------- UI refs ----------
+  const loginCard = document.getElementById('loginCard');
+  const googleLoginBtn = document.getElementById('googleLoginBtn');
+  const signOutBtn = document.getElementById('signOutBtn');
+  const topAvatar = document.getElementById('topAvatar');
+  const topName = document.getElementById('topName');
 
-  const offer = await pc.createOffer();
-  await pc.setLocalDescription(offer);
-  // save offer in call doc
-  await setDoc(callDocRef, { caller: currentUser.uid, callee: currentPeerUid, offer: { type: offer.type, sdp: offer.sdp } }, { merge: true });
+  const usersPage = document.getElementById('usersPage');
+  const usersList = document.getElementById('usersList');
+  const searchBox = document.getElementById('searchBox');
+  const myAvatar = document.getElementById('myAvatar');
+  const myName = document.getElementById('myName');
+  const myMail = document.getElementById('myMail');
+  const recentContainer = document.getElementById('recentContainer');
 
-  // listen for answer
-  onSnapshot(callDocRef, (snap) => {
-    const data = snap.data();
-    if (!pc.currentRemoteDescription && data?.answer) {
-      const ans = new RTCSessionDescription(data.answer);
-      pc.setRemoteDescription(ans);
+  const chatPage = document.getElementById('chatPage');
+  const messagesEl = document.getElementById('messages');
+  const messageInput = document.getElementById('messageInput');
+  const sendMsgBtn = document.getElementById('sendMsgBtn');
+  const filePicker = document.getElementById('filePicker');
+  const chatTitle = document.getElementById('chatTitle');
+  const chatSubtitle = document.getElementById('chatSubtitle');
+  const convInfo = document.getElementById('convInfo');
+  const convFiles = document.getElementById('convFiles');
+
+  const profilePage = document.getElementById('profilePage');
+  const profileImg = document.getElementById('profileImg');
+  const profileNameDisplay = document.getElementById('profileNameDisplay');
+  const profileEmail = document.getElementById('profileEmail');
+  const usernameSet = document.getElementById('usernameSet');
+  const profilePicInput = document.getElementById('profilePicInput');
+  const saveProfileBtn = document.getElementById('saveProfileBtn');
+
+  const callsPage = document.getElementById('callsPage');
+  const callTarget = document.getElementById('callTarget');
+  const startVideoCallBtn = document.getElementById('startVideoCallBtn');
+  const startAudioCallBtn = document.getElementById('startAudioCallBtn');
+  const localVid = document.getElementById('localVid');
+  const remoteVid = document.getElementById('remoteVid');
+  const hangupBtn = document.getElementById('hangupBtn');
+  const incomingCalls = document.getElementById('incomingCalls');
+
+  // state
+  let currentUser = null;
+  let currentChatId = null;
+  let currentPeer = null;
+  let unsubMessages = null;
+  let unsubUsers = null;
+  let unsubRecent = null;
+
+  // Hash routing
+  function navTo(route){
+    location.hash = route;
+  }
+  function showPage(id){
+    // hide all
+    [usersPage, chatPage, profilePage, callsPage].forEach(p => p.classList.add('hidden'));
+    if (id) document.getElementById(id).classList.remove('hidden');
+  }
+  function handleRoute(){
+    const h = location.hash || '#/users';
+    if (h.startsWith('#/chat/')) {
+      const uid = h.split('/')[2];
+      openChat(uid);
+      showPage('chatPage');
+    } else if (h === '#/profile') {
+      showProfile();
+      showPage('profilePage');
+    } else if (h === '#/calls') {
+      showCalls();
+      showPage('callsPage');
+    } else {
+      showUsers();
+      showPage('usersPage');
     }
-  });
+  }
+  window.addEventListener('hashchange', handleRoute);
 
-  // listen for remote ICE
-  onSnapshot(answerCandidates, (snap) => {
-    snap.docChanges().forEach(change => {
-      if (change.type === "added") {
-        const c = change.doc.data();
-        pc.addIceCandidate(c);
-      }
-    });
-  });
+  // Auth
+  googleLoginBtn.onclick = async () => {
+    try {
+      await signInWithPopup(auth, provider);
+    } catch (e) { alert('Login failed: '+e.message) }
+  };
+  signOutBtn.onclick = async () => { await signOut(auth); location.reload(); };
 
-  endCallBtn.classList.remove('hidden');
-  audioCallBtn.disabled = true;
-  videoCallBtn.disabled = true;
-}
+  onAuthStateChanged(auth, async (user) => {
+    currentUser = user;
+    if (user) {
+      loginCard.classList.add('hidden');
+      signOutBtn.classList.remove('hidden');
+      topAvatar.textContent = (user.displayName||'U')[0].toUpperCase();
+      topName.textContent = user.displayName || user.email;
+      myAvatar.textContent = (user.displayName||'U')[0].toUpperCase();
+      myName.textContent = user.displayName || 'Unnamed';
+      myMail.textContent = user.email || '';
+      profileNameDisplay.textContent = user.displayName || 'Unnamed';
+      profileEmail.textContent = user.email || '';
 
-/* Accept incoming calls (callee) */
-function listenForIncomingCalls(){
-  const callsCol = collection(db, "calls");
-  onSnapshot(callsCol, (snap) => {
-    snap.forEach(async docSnap => {
-      const data = docSnap.data();
-      const id = docSnap.id;
-      // incoming for me and not created by me
-      if (data.callee === currentUser.uid && data.caller !== currentUser.uid && !data.answered) {
-        const accept = confirm(`Incoming call from ${data.caller}. Accept?`);
-        if (!accept) return;
-        // set up pc
-        await startLocalStream(Boolean(data.offer && data.offer.sdp && data.offer.sdp.includes("m=video"))); // heuristic
-        pc = new RTCPeerConnection();
-        localStream.getTracks().forEach(t => pc.addTrack(t, localStream));
-        remoteStream = new MediaStream();
-        remoteVideo.srcObject = remoteStream;
-        pc.ontrack = (e) => { e.streams[0].getTracks().forEach(t=>remoteStream.addTrack(t)); };
-
-        const callRef = doc(db, "calls", id);
-        const offerCandidates = collection(db, "calls", id, "offerCandidates");
-        const answerCandidates = collection(db, "calls", id, "answerCandidates");
-
-        // add ICE from caller
-        onSnapshot(offerCandidates, (s) => {
-          s.docChanges().forEach(ch => {
-            if (ch.type === 'added') pc.addIceCandidate(ch.doc.data());
-          });
+      // ensure user doc exists
+      const uRef = doc(db, 'users', user.uid);
+      const snap = await getDoc(uRef);
+      if (!snap.exists()) {
+        await setDoc(uRef, {
+          displayName: user.displayName || null,
+          email: user.email || null,
+          username: null,
+          photoURL: user.photoURL || null,
+          createdAt: serverTimestamp()
         });
+      } else {
+        const data = snap.data();
+        if (data.photoURL) profileImg.src = data.photoURL;
+        if (data.username) usernameSet.value = data.username;
+      }
 
-        pc.onicecandidate = (e) => {
-          if (!e.candidate) return;
-          addDoc(answerCandidates, e.candidate.toJSON());
-        };
+      // start listeners
+      startUsersListener();
+      startRecentListener();
+      handleRoute();
+    } else {
+      loginCard.classList.remove('hidden');
+      signOutBtn.classList.add('hidden');
+      navTo('#/users');
+    }
+  });
 
-        // set remote descr from offer
-        await pc.setRemoteDescription(new RTCSessionDescription(data.offer));
-        const answer = await pc.createAnswer();
-        await pc.setLocalDescription(answer);
-        // save answer
-        await setDoc(callRef, { ...data, answer: { type:answer.type, sdp: answer.sdp }, answered: true }, { merge: true });
+  // Users list realtime
+  async function startUsersListener(){
+    if (unsubUsers) unsubUsers();
+    const uCol = collection(db, 'users');
+    unsubUsers = onSnapshot(uCol, snap => {
+      usersList.innerHTML = '';
+      snap.forEach(docSnap => {
+        const d = docSnap.data(); const id = docSnap.id;
+        if (currentUser && id === currentUser.uid) return; // skip self
+        const node = userItemHtml(id, d);
+        usersList.appendChild(node);
+      });
+    });
+  }
 
-        // listen for end or other changes (not implemented fully)
-        endCallBtn.classList.remove('hidden');
+  function userItemHtml(uid, data){
+    const node = document.createElement('div');
+    node.className = 'user-item';
+    const avatar = document.createElement('div'); avatar.className='avatar';
+    if (data.photoURL) { avatar.innerHTML = `<img src="${data.photoURL}" style="width:44px;height:44px;border-radius:50%"/>`; }
+    else avatar.textContent = (data.username || data.displayName || 'U')[0]?.toUpperCase();
+    const info = document.createElement('div'); info.style.flex='1';
+    info.innerHTML = `<div style="font-weight:700">${escapeHtml(data.username || data.displayName || 'Unnamed')}</div><div class="small">${escapeHtml(data.email || '')}</div>`;
+    node.appendChild(avatar); node.appendChild(info);
+    node.onclick = () => { navTo('#/chat/'+uid); }
+    return node;
+  }
+
+  // Search
+  searchBox.addEventListener('input', () => {
+    const q = searchBox.value.toLowerCase();
+    const items = usersList.querySelectorAll('.user-item');
+    items.forEach(it => {
+      it.style.display = it.innerText.toLowerCase().includes(q) ? '' : 'none';
+    });
+  });
+
+  // Recent chats listener
+  function startRecentListener(){
+    if (unsubRecent) unsubRecent();
+    const chatsCol = collection(db, 'chats');
+    unsubRecent = onSnapshot(chatsCol, snap => {
+      recentContainer.innerHTML = '';
+      snap.forEach(docSnap => {
+        const id = docSnap.id;
+        if (!currentUser) return;
+        if (!id.includes(currentUser.uid)) return;
+        const parts = id.split('_'); const partner = parts[0]===currentUser.uid?parts[1]:parts[0];
+        const node = document.createElement('div'); node.className='user-item';
+        node.innerHTML = `<div class="avatar">${partner[0].toUpperCase()}</div><div style="flex:1"><div style="font-weight:700">${partner}</div><div class="small">${id}</div></div>`;
+        node.onclick = () => navTo('#/chat/'+partner);
+        recentContainer.appendChild(node);
+      });
+    });
+  }
+
+  // Open chat
+  async function openChat(friendUid){
+    if (!currentUser) { alert('Please login'); navTo('#/users'); return; }
+    // set up chatId (lexicographic)
+    const chatId = (currentUser.uid < friendUid) ? `${currentUser.uid}_${friendUid}` : `${friendUid}_${currentUser.uid}`;
+    currentChatId = chatId;
+    currentPeer = friendUid;
+    chatTitle.textContent = 'Chat with ' + friendUid;
+    chatSubtitle.textContent = 'chat id: ' + chatId;
+
+    // unsubscribe old messages
+    if (unsubMessages) unsubMessages();
+
+    const messagesCol = collection(db, 'chats', chatId, 'messages');
+    const q = query(messagesCol, orderBy('createdAt'));
+    unsubMessages = onSnapshot(q, snapshot => {
+      messagesEl.innerHTML = '';
+      snapshot.forEach(ms => {
+        const m = ms.data();
+        const div = document.createElement('div');
+        div.className = 'msg ' + (m.from === currentUser.uid ? 'me' : 'other');
+        if (m.type === 'text') div.textContent = m.text;
+        else if (m.type === 'image') {
+          const img = document.createElement('img'); img.src = m.fileUrl; img.style.maxWidth='200px'; img.style.borderRadius='8px';
+          div.appendChild(img);
+        } else if (m.type === 'file') {
+          const a = document.createElement('a'); a.href = m.fileUrl; a.textContent = m.fileName || 'File'; a.target='_blank';
+          div.appendChild(a);
+        }
+        messagesEl.appendChild(div);
+      });
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+    });
+
+    // load files list for conv info
+    convFiles.innerHTML = '';
+    const msgsSnap = await getDocs(messagesCol);
+    msgsSnap.forEach(m=>{ const data = m.data(); if(data.type==='file'||data.type==='image'){ const a=document.createElement('a'); a.href=data.fileUrl; a.textContent=data.fileName||'file'; a.style.display='block'; convFiles.appendChild(a); }});
+  }
+
+  // Send message (text or file)
+  sendMsgBtn.onclick = async () => {
+    if (!currentChatId) return alert('Select user first');
+    const text = messageInput.value.trim();
+    const file = filePicker.files[0];
+    const messagesCol = collection(db, 'chats', currentChatId, 'messages');
+    if (!text && !file) return;
+    const payload = { from: currentUser.uid, createdAt: serverTimestamp() };
+    if (file) {
+      // upload
+      const path = `chatFiles/${currentChatId}/${Date.now()}_${file.name}`;
+      const stRef = sref(storage, path);
+      const snap = await uploadBytes(stRef, file);
+      const url = await getDownloadURL(snap.ref);
+      payload.type = file.type.startsWith('image/') ? 'image' : 'file';
+      payload.fileUrl = url;
+      payload.fileName = file.name;
+    } else {
+      payload.type = 'text';
+      payload.text = text;
+    }
+    await addDoc(messagesCol, payload);
+    messageInput.value = ''; filePicker.value = '';
+  };
+
+  // Profile page
+  async function showProfile(){
+    if (!currentUser) return navTo('#/users');
+    const uRef = doc(db, 'users', currentUser.uid);
+    const snap = await getDoc(uRef);
+    const data = snap.exists() ? snap.data() : {};
+    profileImg.src = data.photoURL || '';
+    profileNameDisplay.textContent = data.displayName || currentUser.displayName || 'Unnamed';
+    profileEmail.textContent = data.email || currentUser.email || '';
+    usernameSet.value = data.username || '';
+  }
+
+  saveProfileBtn.onclick = async () => {
+    if (!currentUser) return;
+    const u = usernameSet.value.trim();
+    // naive uniqueness: check users where username==u
+    if (u) {
+      const usersCol = collection(db, 'users');
+      const q = query(usersCol, where('username','==',u));
+      const res = await getDocs(q);
+      if (!res.empty) {
+        // if the only doc is mine then ok
+        if (!(res.size === 1 && res.docs[0].id === currentUser.uid)) {
+          return alert('Username already taken');
+        }
+      }
+    }
+    // if profile pic provided
+    const file = profilePicInput.files[0];
+    let photoURL = null;
+    if (file) {
+      const path = `profiles/${currentUser.uid}/${Date.now()}_${file.name}`;
+      const stRef = sref(storage, path);
+      const snap = await uploadBytes(stRef, file);
+      photoURL = await getDownloadURL(snap.ref);
+      profileImg.src = photoURL;
+      topAvatar.innerHTML = `<img src="${photoURL}" style="width:40px;height:40px;border-radius:50%"/>`;
+    }
+    const uRef = doc(db, 'users', currentUser.uid);
+    const updateObj = {};
+    if (u) updateObj.username = u;
+    if (photoURL) updateObj.photoURL = photoURL;
+    await setDoc(uRef, updateObj, { merge: true });
+    alert('Profile updated');
+  };
+
+  // Calls (basic WebRTC via Firestore signaling) - demo
+  let pc=null, localStream=null, remoteStream=null, callDoc=null;
+  async function startLocal(isVideo){
+    try {
+      localStream = await navigator.mediaDevices.getUserMedia({ audio:true, video:isVideo });
+      localVid.srcObject = localStream;
+    } catch(e){ alert('Mic/Camera permission denied: '+e.message); }
+  }
+
+  async function startCall(targetUid, isVideo){
+    if (!currentUser) return alert('Login first');
+    if (!targetUid) return alert('Enter target UID');
+    await startLocal(isVideo);
+    pc = new RTCPeerConnection();
+    pc.ontrack = e => {
+      if (!remoteStream) remoteStream = new MediaStream();
+      remoteStream.addTrack(e.track);
+      remoteVid.srcObject = remoteStream;
+    };
+    localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
+    // create call doc
+    callDoc = await addDoc(collection(db,'calls'), { caller: currentUser.uid, callee: targetUid, createdAt: serverTimestamp() });
+    const offerCandidates = collection(db,'calls',callDoc.id,'offerCandidates');
+    const answerCandidates = collection(db,'calls',callDoc.id,'answerCandidates');
+
+    pc.onicecandidate = e => { if (e.candidate) addDoc(offerCandidates, e.candidate.toJSON()); };
+
+    const offer = await pc.createOffer();
+    await pc.setLocalDescription(offer);
+    await setDoc(callDoc, { caller: currentUser.uid, callee: targetUid, offer: { type:offer.type, sdp:offer.sdp } }, { merge:true });
+
+    // listen for answer
+    onSnapshot(callDoc, snap => {
+      const data = snap.data();
+      if (!pc.currentRemoteDescription && data && data.answer) {
+        pc.setRemoteDescription(data.answer);
+      }
+    });
+    // listen for answerCandidates
+    onSnapshot(answerCandidates, snap => {
+      snap.docChanges().forEach(change => {
+        if (change.type==='added') pc.addIceCandidate(change.doc.data());
+      });
+    });
+
+    hangupBtn.classList.remove('hidden');
+  }
+
+  async function answerCall(callId, data){
+    // callee accepts
+    await startLocal(Boolean(data.offer && data.offer.sdp && data.offer.sdp.includes('m=video')));
+    pc = new RTCPeerConnection();
+    pc.ontrack = e => {
+      if (!remoteStream) remoteStream = new MediaStream();
+      remoteStream.addTrack(e.track);
+      remoteVid.srcObject = remoteStream;
+    };
+    localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
+
+    const callRef = doc(db,'calls',callId);
+    const offerCandidates = collection(db,'calls',callId,'offerCandidates');
+    const answerCandidates = collection(db,'calls',callId,'answerCandidates');
+
+    // add incomingICE
+    onSnapshot(offerCandidates, snap => {
+      snap.docChanges().forEach(ch => { if (ch.type==='added') pc.addIceCandidate(ch.doc.data()); });
+    });
+
+    pc.onicecandidate = e => { if (e.candidate) addDoc(answerCandidates, e.candidate.toJSON()); };
+
+    await pc.setRemoteDescription(data.offer);
+    const answer = await pc.createAnswer();
+    await pc.setLocalDescription(answer);
+    await setDoc(callRef, { ...data, answer: { type:answer.type, sdp:answer.sdp }, answered:true }, { merge:true });
+
+    hangupBtn.classList.remove('hidden');
+  }
+
+  // monitor incoming calls
+  onSnapshot(collection(db,'calls'), snap => {
+    incomingCalls.innerHTML = '';
+    snap.forEach(docSnap => {
+      const d = docSnap.data(); const id = docSnap.id;
+      if (d.callee === (currentUser && currentUser.uid) && !d.answered) {
+        const node = document.createElement('div'); node.className='user-item';
+        node.innerHTML = `<div class="avatar">${(d.caller||'C')[0]}</div><div style="flex:1"><div style="font-weight:700">${d.caller}</div><div class="small">Incoming call</div></div>`;
+        const accept = document.createElement('button'); accept.textContent='Accept';
+        accept.onclick = () => answerCall(id,d);
+        const reject = document.createElement('button'); reject.textContent='Reject';
+        reject.style.marginLeft='6px';
+        reject.onclick = () => { /* in production remove doc or set rejected flag */ };
+        node.appendChild(accept); node.appendChild(reject);
+        incomingCalls.appendChild(node);
       }
     });
   });
-}
 
-/* End call */
-function endCall(){
-  if (pc) { pc.close(); pc = null; }
-  if (localStream) { localStream.getTracks().forEach(t=>t.stop()); localStream=null; localVideo.srcObject=null; }
-  if (remoteStream) { remoteStream.getTracks().forEach(t=>t.stop()); remoteStream=null; remoteVideo.srcObject=null; }
-  endCallBtn.classList.add('hidden');
-  audioCallBtn.disabled = false;
-  videoCallBtn.disabled = false;
-}
+  hangupBtn.onclick = () => {
+    if (pc) pc.close();
+    if (localStream) { localStream.getTracks().forEach(t=>t.stop()); localVid.srcObject=null; }
+    if (remoteStream) { remoteStream.getTracks().forEach(t=>t.stop()); remoteVid.srcObject=null; }
+    hangupBtn.classList.add('hidden');
+  };
 
-/* attach call buttons */
-audioCallBtn.onclick = () => startCall(false);
-videoCallBtn.onclick = () => startCall(true);
-endCallBtn.onclick = endCall;
+  startVideoCallBtn.onclick = () => startCall(callTarget.value.trim(), true);
+  startAudioCallBtn.onclick = () => startCall(callTarget.value.trim(), false);
 
-/* start listening incoming calls */
-listenForIncomingCalls();
+  // UI helpers
+  function escapeHtml(s){ if(!s) return ''; return String(s).replace(/[&<>"']/g, c=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c])); }
 
-/* ---------- helpers ---------- */
-function showMsg(txt){ alert(txt); }
+  // initial route
+  window.onload = () => {
+    if (!location.hash) location.hash = '#/users';
+    handleRoute();
+    // top logout mapping
+    document.getElementById('signOutBtn').onclick = signOutBtn.onclick;
+  };
 
-</script>
+  // simple show Users
+  function showUsers(){ handleRoute(); }
+
+  // nav helpers for chat open externally: allow friend UID or username
+  async function openChat(target){
+    // target may be uid or username. Try to find user by username first
+    // If username-like (no @), try search
+    let targetUid = target;
+    // if target length not equal typical uid, try username lookup
+    if (target && target.length < 30) {
+      // try find user where username==target
+      const usersCol = collection(db,'users');
+      const q = query(usersCol, where('username','==',target));
+      const res = await getDocs(q);
+      if (!res.empty) { targetUid = res.docs[0].id; }
+      else {
+        // maybe target is uid as well, keep it
+        targetUid = target;
+      }
+    }
+    await openChat(targetUid);
+  }
+
+  </script>
 </body>
 </html>
