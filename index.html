@@ -1,130 +1,561 @@
 <meta name='viewport' content='width=device-width, initial-scale=1'/><!DOCTYPE html>
-<html lang="en">
+<html lang="hi">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>V Tok Store Login</title>
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-  import { getAuth, RecaptchaVerifier, signInWithPhoneNumber, onAuthStateChanged, signOut } 
-    from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-
-  const firebaseConfig = {
-    apiKey: "AIzaSyBtYFjOBAuDQkcrwKRKP4FzbSb5N5pudYk",
-    authDomain: "v-tok-d78ad.firebaseapp.com",
-    projectId: "v-tok-d78ad",
-    storageBucket: "v-tok-d78ad.firebasestorage.app",
-    messagingSenderId: "448669303511",
-    appId: "1:448669303511:web:7af9fec0b6e0f981eaa692",
-    measurementId: "G-ZJ2L4E58T1"
-  };
-
-  const app = initializeApp(firebaseConfig);
-  const auth = getAuth(app);
-
-  // ✅ Admin phone (change as you want)
-  const adminPhone = "+919876543210"; // yahan apna admin number likho (with +91)
-
-  window.onload = function() {
-    window.recaptchaVerifier = new RecaptchaVerifier(auth, "recaptcha-container", {
-      size: "normal",
-      callback: () => console.log("reCAPTCHA solved!"),
-    });
-  }
-
-  // Send OTP
-  window.sendOTP = function() {
-    const phoneNumber = document.getElementById("phone").value;
-    const appVerifier = window.recaptchaVerifier;
-    signInWithPhoneNumber(auth, phoneNumber, appVerifier)
-      .then((confirmationResult) => {
-        window.confirmationResult = confirmationResult;
-        document.getElementById("otpSection").style.display = "block";
-        alert("OTP sent successfully!");
-      })
-      .catch((error) => {
-        alert("Error: " + error.message);
-      });
-  };
-
-  // Verify OTP
-  window.verifyOTP = function() {
-    const code = document.getElementById("otp").value;
-    confirmationResult.confirm(code).then((result) => {
-      const user = result.user;
-      if (user.phoneNumber === adminPhone) {
-        document.getElementById("adminPanel").style.display = "block";
-        document.getElementById("loginSection").style.display = "none";
-      } else {
-        document.getElementById("userHome").style.display = "block";
-        document.getElementById("loginSection").style.display = "none";
-      }
-    }).catch((error) => {
-      alert("Invalid OTP");
-    });
-  };
-
-  // Logout
-  window.logout = function() {
-    signOut(auth).then(() => location.reload());
-  };
-</script>
-
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>InfernoX Chat Store (Demo)</title>
 <style>
-body {
-  font-family: Poppins, sans-serif;
-  background: #f3f4f6;
-  margin: 0;
-  padding: 20px;
-  text-align: center;
-}
-.card {
-  background: white;
-  padding: 20px;
-  border-radius: 12px;
-  box-shadow: 0 3px 8px rgba(0,0,0,0.2);
-  display: inline-block;
-  max-width: 400px;
-}
-button {
-  background: #007bff;
-  color: white;
-  border: none;
-  padding: 10px 20px;
-  margin-top: 10px;
-  border-radius: 6px;
-  cursor: pointer;
-}
-button:hover { background: #0056b3; }
+  body{font-family:Poppins,system-ui; margin:0;background:#f3f6fb;color:#222}
+  .topbar{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;background:#34a853;color:#fff}
+  .container{max-width:1100px;margin:18px auto;padding:12px}
+  .card{background:#fff;padding:12px;border-radius:10px;box-shadow:0 6px 18px rgba(0,0,0,0.06)}
+  .row{display:flex;gap:12px}
+  .col{flex:1}
+  .users-list,.messages{max-height:60vh;overflow:auto;padding:8px;display:flex;flex-direction:column;gap:10px}
+  .user-item{display:flex;align-items:center;gap:10px;padding:8px;border-radius:8px;cursor:pointer}
+  .user-item:hover{background:#f0f6f3}
+  .avatar{width:42px;height:42px;border-radius:50%;background:#ddd;display:flex;align-items:center;justify-content:center;font-weight:700}
+  .msg{-webkit-align-self:flex-start;border-radius:8px;padding:8px;max-width:75%}
+  .msg.me{background:#34a853;color:#fff;align-self:flex-end}
+  .msg.other{background:#eee;color:#111}
+  .input-row{display:flex;gap:8px;margin-top:8px}
+  button{background:#4285f4;color:#fff;border:none;padding:8px 10px;border-radius:8px;cursor:pointer}
+  input,textarea{padding:8px;border-radius:8px;border:1px solid #ddd}
+  .hidden{display:none}
+  .call-btn{background:#ff6b6b}
 </style>
 </head>
-
 <body>
 
-  <div id="loginSection" class="card">
-    <h2>Login with Phone OTP</h2>
-    <input id="phone" type="text" placeholder="+91XXXXXXXXXX"><br>
-    <div id="recaptcha-container"></div>
-    <button onclick="sendOTP()">Send OTP</button>
+<div class="topbar">
+  <div><strong>InfernoX Chat</strong></div>
+  <div id="authArea">
+    <span id="userNameTop"></span>
+    <button id="loginBtn">Sign in with Google</button>
+    <button id="logoutBtn" class="hidden">Logout</button>
+  </div>
+</div>
 
-    <div id="otpSection" style="display:none;">
-      <input id="otp" type="text" placeholder="Enter OTP"><br>
-      <button onclick="verifyOTP()">Verify OTP</button>
+<div class="container">
+  <!-- LOGIN NOTICE -->
+  <div id="loginPanel" class="card" style="text-align:center">
+    <h3>Login karo Google se</h3>
+    <p>Login karne ke baad aap username set kar sakte ho, doston ko search karo aur chat shuru karo.</p>
+    <button id="googleSign">Sign in with Google</button>
+  </div>
+
+  <!-- APP LAYOUT -->
+  <div id="appPanel" class="hidden">
+    <div class="row">
+      <!-- LEFT: contacts/search -->
+      <div style="width:320px">
+        <div class="card">
+          <div style="display:flex;gap:8px;align-items:center">
+            <div class="avatar" id="myAvatar">U</div>
+            <div>
+              <div id="myDisplayName" style="font-weight:700"></div>
+              <div id="myUid" style="font-size:12px;color:#666"></div>
+            </div>
+          </div>
+
+          <hr>
+          <div>
+            <input id="usernameInput" placeholder="Set username (unique)" />
+            <button id="setUsernameBtn">Save Username</button>
+          </div>
+
+          <hr>
+          <div>
+            <input id="searchUser" placeholder="Search friend by username" />
+          </div>
+          <div style="margin-top:8px" class="users-list card" id="usersList"></div>
+        </div>
+
+        <div style="margin-top:12px" class="card">
+          <h4>Recent Chats</h4>
+          <div id="recentList" class="users-list"></div>
+        </div>
+      </div>
+
+      <!-- MIDDLE: chat area -->
+      <div class="col">
+        <div class="card" style="display:flex;flex-direction:column;height:80vh">
+          <div style="display:flex;align-items:center;justify-content:space-between">
+            <div>
+              <strong id="chatWithName">Select a friend to chat</strong><br>
+              <small id="chatWithUid" style="color:#555"></small>
+            </div>
+            <div>
+              <button id="audioCallBtn" class="call-btn hidden">Audio Call</button>
+              <button id="videoCallBtn" class="call-btn hidden">Video Call</button>
+            </div>
+          </div>
+
+          <div id="messages" class="messages" style="flex:1;margin-top:8px"></div>
+
+          <div class="input-row">
+            <input id="msgInput" placeholder="Type message..." style="flex:1" />
+            <input type="file" id="fileInput" />
+            <button id="sendBtn">Send</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT: optional video area -->
+      <div style="width:320px">
+        <div class="card" id="videoCard">
+          <h4>Call</h4>
+          <video id="localVideo" autoplay muted playsinline style="width:100%;background:#000;height:180px"></video>
+          <video id="remoteVideo" autoplay playsinline style="width:100%;background:#000;height:180px;margin-top:8px"></video>
+          <div style="margin-top:8px">
+            <button id="endCallBtn" class="hidden">End Call</button>
+          </div>
+        </div>
+
+        <div style="margin-top:12px" class="card">
+          <h4>Info / Tips</h4>
+          <small>App ko HTTPS par host karo. WebRTC calls ke liye permissions allow karo.</small>
+        </div>
+      </div>
     </div>
   </div>
+</div>
 
-  <div id="adminPanel" class="card" style="display:none;">
-    <h2>Admin Panel</h2>
-    <p>Welcome, Admin! 🎯</p>
-    <p>Yahan par tum apne store ke saman, orders aur users ka real-time data dikha sakti ho.</p>
-    <button onclick="logout()">Logout</button>
-  </div>
+<!-- Firebase + App script -->
+<script type="module">
+/* =========================
+   IMPORTANT: Change nothing above without reading.
+   This file is a starter chat + call app using:
+   - Firebase Auth (Google)
+   - Firestore for users, chats, signaling
+   - Storage for files
+   - WebRTC (signaling via Firestore)
+   ========================= */
 
-  <div id="userHome" class="card" style="display:none;">
-    <h2>Welcome to V Tok Store</h2>
-    <p>Ye normal user ka home page hai (Play Store style bana sakti ho).</p>
-    <button onclick="logout()">Logout</button>
-  </div>
+/* ---------- Firebase config (YOUR project — using your earlier values) ---------- */
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+import {
+  getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged
+} from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+import {
+  getFirestore, doc, setDoc, getDoc, collection, query, where, onSnapshot, addDoc, orderBy, serverTimestamp, limit
+} from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import { getStorage, ref as sref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-storage.js";
 
+const firebaseConfig = {
+  apiKey: "AIzaSyBtYFjOBAuDQkcrwKRKP4FzbSb5N5pudYk",
+  authDomain: "v-tok-d78ad.firebaseapp.com",
+  projectId: "v-tok-d78ad",
+  storageBucket: "v-tok-d78ad.firebasestorage.app",
+  messagingSenderId: "448669303511",
+  appId: "1:448669303511:web:7af9fec0b6e0f981eaa692",
+  measurementId: "G-ZJ2L4E58T1"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const provider = new GoogleAuthProvider();
+const db = getFirestore(app);
+const storage = getStorage(app);
+
+/* ---------- UI refs ---------- */
+const loginPanel = document.getElementById('loginPanel');
+const appPanel = document.getElementById('appPanel');
+const googleSign = document.getElementById('googleSign');
+const loginBtn = document.getElementById('loginBtn');
+const logoutBtn = document.getElementById('logoutBtn');
+const userNameTop = document.getElementById('userNameTop');
+const myAvatar = document.getElementById('myAvatar');
+const myDisplayName = document.getElementById('myDisplayName');
+const myUid = document.getElementById('myUid');
+const myDisplayTop = document.getElementById('userNameTop');
+const setUsernameBtn = document.getElementById('setUsernameBtn');
+const usernameInput = document.getElementById('usernameInput');
+const usersList = document.getElementById('usersList');
+const searchUser = document.getElementById('searchUser');
+const messagesEl = document.getElementById('messages');
+const sendBtn = document.getElementById('sendBtn');
+const msgInput = document.getElementById('msgInput');
+const fileInput = document.getElementById('fileInput');
+const chatWithName = document.getElementById('chatWithName');
+const chatWithUid = document.getElementById('chatWithUid');
+const audioCallBtn = document.getElementById('audioCallBtn');
+const videoCallBtn = document.getElementById('videoCallBtn');
+const localVideo = document.getElementById('localVideo');
+const remoteVideo = document.getElementById('remoteVideo');
+const endCallBtn = document.getElementById('endCallBtn');
+const recentList = document.getElementById('recentList');
+
+/* ---------- state ---------- */
+let currentUser = null;
+let currentChatId = null;
+let currentPeerUid = null;
+let unsubscribeMessages = null;
+let unsubscribeUsers = null;
+
+/* ---------- Authentication ---------- */
+async function startGoogleSignIn(){
+  try {
+    await signInWithPopup(auth, provider);
+  } catch (err) {
+    alert("Login failed: " + err.message);
+  }
+}
+googleSign.onclick = startGoogleSignIn;
+loginBtn.onclick = startGoogleSignIn;
+
+logoutBtn.onclick = async () => {
+  await signOut(auth);
+  location.reload();
+};
+
+/* on auth change */
+onAuthStateChanged(auth, async (user) => {
+  currentUser = user;
+  if (user) {
+    userNameTop.textContent = user.displayName || user.email;
+    loginPanel.classList.add('hidden');
+    appPanel.classList.remove('hidden');
+    document.getElementById('loginPanel').style.display = 'none';
+    document.getElementById('authArea').querySelector('#logoutBtn').classList.remove('hidden');
+
+    // show avatar & name
+    myAvatar.textContent = (user.displayName||'U')[0].toUpperCase();
+    myDisplayName.textContent = user.displayName;
+    myUid.textContent = `UID: ${user.uid}`;
+
+    // ensure user doc exists in Firestore (store displayName and email and username placeholder)
+    const userRef = doc(db, "users", user.uid);
+    const snapshot = await getDoc(userRef);
+    if (!snapshot.exists()) {
+      await setDoc(userRef, {
+        displayName: user.displayName || null,
+        email: user.email || null,
+        createdAt: serverTimestamp(),
+        username: null // user will set
+      });
+    } else {
+      const data = snapshot.data();
+      if (data.username) usernameInput.value = data.username;
+    }
+
+    // start listing users and recent chats
+    startUsersListener();
+    startRecentChatsListener();
+  } else {
+    // logged out
+    userNameTop.textContent = '';
+    loginPanel.classList.remove('hidden');
+    appPanel.classList.add('hidden');
+  }
+});
+
+/* ---------- Users search and list ---------- */
+function startUsersListener(){
+  // simple real-time list of all users (careful in prod: pagination required)
+  if (unsubscribeUsers) unsubscribeUsers();
+  const usersCol = collection(db, "users");
+  unsubscribeUsers = onSnapshot(usersCol, (snap) => {
+    usersList.innerHTML = '';
+    snap.forEach(docSnap => {
+      const d = docSnap.data();
+      const id = docSnap.id;
+      // don't list self
+      if (currentUser && id === currentUser.uid) return;
+      const node = document.createElement('div');
+      node.className = 'user-item';
+      node.innerHTML = `<div class="avatar">${(d.username || d.displayName || 'U')[0]?.toUpperCase()}</div>
+                        <div style="flex:1">
+                          <div style="font-weight:700">${d.username || d.displayName || 'Unnamed'}</div>
+                          <div style="font-size:12px;color:#666">${d.email || ''}</div>
+                        </div>`;
+      node.onclick = () => openChatWith(id, d.username || d.displayName || 'Friend');
+      usersList.appendChild(node);
+    });
+  });
+}
+
+/* Search by username (client-side) */
+searchUser.addEventListener('input', () => {
+  const q = searchUser.value.toLowerCase();
+  const items = usersList.querySelectorAll('.user-item');
+  items.forEach(it => {
+    const txt = it.innerText.toLowerCase();
+    it.style.display = txt.includes(q) ? '' : 'none';
+  });
+});
+
+/* ---------- Set username ---------- */
+setUsernameBtn.onclick = async () => {
+  const u = (usernameInput.value || '').trim();
+  if (!u) return alert('Username daalo');
+  // check unique: query users where username == u
+  const usersCol = collection(db, "users");
+  const q = query(usersCol, where("username",'==',u));
+  const snap = await getDocs(q).catch(()=>null);
+  // simpler: try to set directly (prod: enforce uniqueness via security rules/cloud function)
+  try {
+    await setDoc(doc(db,"users",currentUser.uid), { username: u }, { merge: true });
+    alert('Username saved');
+  } catch (e) {
+    alert('Error saving username: '+e.message);
+  }
+};
+
+/* ---------- Chats model ----------
+   We'll store chats as doc ID = ordered pair "uid1_uid2" (lexicographic) in collection "chats"
+   Each chat doc has subcollection "messages" with fields {from, text, type, createdAt, fileUrl}
+   ------------------------------------------------------------------ */
+import { getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+function chatDocId(a,b){
+  return a < b ? `${a}_${b}` : `${b}_${a}`;
+}
+
+/* Open chat with a friend */
+async function openChatWith(friendUid, friendName){
+  currentChatId = chatDocId(currentUser.uid, friendUid);
+  currentPeerUid = friendUid;
+  chatWithName.textContent = friendName;
+  chatWithUid.textContent = currentChatId;
+  messagesEl.innerHTML = '<small style="color:#888">Loading...</small>';
+  // show call buttons
+  audioCallBtn.classList.remove('hidden');
+  videoCallBtn.classList.remove('hidden');
+
+  // unsubscribe previous
+  if (unsubscribeMessages) unsubscribeMessages();
+
+  const messagesCol = collection(db, "chats", currentChatId, "messages");
+  const q = query(messagesCol, orderBy("createdAt"));
+  unsubscribeMessages = onSnapshot(q, (snap) => {
+    messagesEl.innerHTML = '';
+    snap.forEach(ms => {
+      const m = ms.data();
+      const div = document.createElement('div');
+      div.className = 'msg '+(m.from === currentUser.uid ? 'me' : 'other');
+      if (m.type === 'text') div.textContent = m.text;
+      else if (m.type === 'file') {
+        const a = document.createElement('a');
+        a.href = m.fileUrl; a.target='_blank';
+        a.textContent = m.fileName || 'File';
+        div.appendChild(a);
+      } else if (m.type === 'image') {
+        const img = document.createElement('img');
+        img.src = m.fileUrl; img.style.maxWidth='200px'; img.style.borderRadius='8px';
+        div.appendChild(img);
+      }
+      messagesEl.appendChild(div);
+    });
+    messagesEl.scrollTop = messagesEl.scrollHeight;
+  });
+}
+
+/* Send message */
+sendBtn.onclick = async () => {
+  if (!currentChatId) return alert('Pehle friend select karo');
+  const txt = msgInput.value.trim();
+  const file = fileInput.files[0];
+  if (!txt && !file) return;
+
+  const messagesColRef = collection(db, "chats", currentChatId, "messages");
+  let payload = { from: currentUser.uid, createdAt: serverTimestamp() };
+
+  if (file) {
+    // upload to storage
+    const path = `chatFiles/${currentChatId}/${Date.now()}_${file.name}`;
+    const sRef = sref(storage, path);
+    const snap = await uploadBytes(sRef, file);
+    const url = await getDownloadURL(snap.ref);
+    const mimetype = file.type;
+    if (mimetype.startsWith('image/')) {
+      payload.type = 'image';
+      payload.fileUrl = url;
+      payload.fileName = file.name;
+    } else {
+      payload.type = 'file';
+      payload.fileUrl = url;
+      payload.fileName = file.name;
+    }
+  } else {
+    payload.type = 'text';
+    payload.text = txt;
+  }
+
+  await addDoc(messagesColRef, payload);
+  msgInput.value = ''; fileInput.value = '';
+};
+
+/* ---------- Recent chats listener: show last message partner list ---------- */
+function startRecentChatsListener(){
+  // Simple method: query all chats where this user is participant (complex in prod)
+  // Here we will scan 'chats' collection and find docs with id containing current uid.
+  // Note: For large scale, keep per-user index/collection.
+  const chatsCol = collection(db, "chats");
+  onSnapshot(chatsCol, (snap) => {
+    recentList.innerHTML = '';
+    snap.forEach(docSnap => {
+      const id = docSnap.id;
+      if (!id.includes(currentUser.uid)) return;
+      // partner id:
+      const parts = id.split('_');
+      const partner = parts[0] === currentUser.uid ? parts[1] : parts[0];
+      // show partner
+      const node = document.createElement('div');
+      node.className = 'user-item';
+      node.innerHTML = `<div class="avatar">${partner[0]}</div><div style="flex:1"><div style="font-weight:700">${partner}</div><div style="font-size:12px;color:#666">${id}</div></div>`;
+      node.onclick = () => openChatWith(partner, partner);
+      recentList.appendChild(node);
+    });
+  });
+}
+
+/* ---------- Simple WebRTC signaling via Firestore (calls collection) ----------
+   Note: This is a simple approach for demo. In production use a proper signaling server.
+   Flow:
+   - Caller creates a 'call' doc with offer, callerUid, calleeUid
+   - Callee listens for call docs addressed to them, creates answer
+   - Both exchange ICE candidates under subcollections
+   ------------------------------------------------------------------------------ */
+let pc = null;
+let localStream = null;
+let remoteStream = null;
+let callDocRef = null;
+
+async function startLocalStream(isVideo){
+  try {
+    localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: isVideo });
+    localVideo.srcObject = localStream;
+  } catch (e) {
+    alert("Camera/Mic access denied: " + e.message);
+  }
+}
+
+async function startCall(isVideo){
+  if (!currentPeerUid) return alert('Select friend to call');
+  await startLocalStream(isVideo);
+  pc = new RTCPeerConnection();
+
+  // attach local tracks
+  localStream.getTracks().forEach(t => pc.addTrack(t, localStream));
+
+  // remote stream
+  remoteStream = new MediaStream();
+  remoteVideo.srcObject = remoteStream;
+  pc.ontrack = (e) => {
+    e.streams[0].getTracks().forEach(track => remoteStream.addTrack(track));
+  };
+
+  // ICE candidates: add to firestore
+  const callsCol = collection(db, "calls");
+  callDocRef = await addDoc(callsCol, { caller: currentUser.uid, callee: currentPeerUid, createdAt: serverTimestamp() });
+  const offerCandidates = collection(db, "calls", callDocRef.id, "offerCandidates");
+  const answerCandidates = collection(db, "calls", callDocRef.id, "answerCandidates");
+
+  pc.onicecandidate = (event) => {
+    if (!event.candidate) return;
+    addDoc(offerCandidates, event.candidate.toJSON());
+  };
+
+  const offer = await pc.createOffer();
+  await pc.setLocalDescription(offer);
+  // save offer in call doc
+  await setDoc(callDocRef, { caller: currentUser.uid, callee: currentPeerUid, offer: { type: offer.type, sdp: offer.sdp } }, { merge: true });
+
+  // listen for answer
+  onSnapshot(callDocRef, (snap) => {
+    const data = snap.data();
+    if (!pc.currentRemoteDescription && data?.answer) {
+      const ans = new RTCSessionDescription(data.answer);
+      pc.setRemoteDescription(ans);
+    }
+  });
+
+  // listen for remote ICE
+  onSnapshot(answerCandidates, (snap) => {
+    snap.docChanges().forEach(change => {
+      if (change.type === "added") {
+        const c = change.doc.data();
+        pc.addIceCandidate(c);
+      }
+    });
+  });
+
+  endCallBtn.classList.remove('hidden');
+  audioCallBtn.disabled = true;
+  videoCallBtn.disabled = true;
+}
+
+/* Accept incoming calls (callee) */
+function listenForIncomingCalls(){
+  const callsCol = collection(db, "calls");
+  onSnapshot(callsCol, (snap) => {
+    snap.forEach(async docSnap => {
+      const data = docSnap.data();
+      const id = docSnap.id;
+      // incoming for me and not created by me
+      if (data.callee === currentUser.uid && data.caller !== currentUser.uid && !data.answered) {
+        const accept = confirm(`Incoming call from ${data.caller}. Accept?`);
+        if (!accept) return;
+        // set up pc
+        await startLocalStream(Boolean(data.offer && data.offer.sdp && data.offer.sdp.includes("m=video"))); // heuristic
+        pc = new RTCPeerConnection();
+        localStream.getTracks().forEach(t => pc.addTrack(t, localStream));
+        remoteStream = new MediaStream();
+        remoteVideo.srcObject = remoteStream;
+        pc.ontrack = (e) => { e.streams[0].getTracks().forEach(t=>remoteStream.addTrack(t)); };
+
+        const callRef = doc(db, "calls", id);
+        const offerCandidates = collection(db, "calls", id, "offerCandidates");
+        const answerCandidates = collection(db, "calls", id, "answerCandidates");
+
+        // add ICE from caller
+        onSnapshot(offerCandidates, (s) => {
+          s.docChanges().forEach(ch => {
+            if (ch.type === 'added') pc.addIceCandidate(ch.doc.data());
+          });
+        });
+
+        pc.onicecandidate = (e) => {
+          if (!e.candidate) return;
+          addDoc(answerCandidates, e.candidate.toJSON());
+        };
+
+        // set remote descr from offer
+        await pc.setRemoteDescription(new RTCSessionDescription(data.offer));
+        const answer = await pc.createAnswer();
+        await pc.setLocalDescription(answer);
+        // save answer
+        await setDoc(callRef, { ...data, answer: { type:answer.type, sdp: answer.sdp }, answered: true }, { merge: true });
+
+        // listen for end or other changes (not implemented fully)
+        endCallBtn.classList.remove('hidden');
+      }
+    });
+  });
+}
+
+/* End call */
+function endCall(){
+  if (pc) { pc.close(); pc = null; }
+  if (localStream) { localStream.getTracks().forEach(t=>t.stop()); localStream=null; localVideo.srcObject=null; }
+  if (remoteStream) { remoteStream.getTracks().forEach(t=>t.stop()); remoteStream=null; remoteVideo.srcObject=null; }
+  endCallBtn.classList.add('hidden');
+  audioCallBtn.disabled = false;
+  videoCallBtn.disabled = false;
+}
+
+/* attach call buttons */
+audioCallBtn.onclick = () => startCall(false);
+videoCallBtn.onclick = () => startCall(true);
+endCallBtn.onclick = endCall;
+
+/* start listening incoming calls */
+listenForIncomingCalls();
+
+/* ---------- helpers ---------- */
+function showMsg(txt){ alert(txt); }
+
+</script>
 </body>
 </html>
