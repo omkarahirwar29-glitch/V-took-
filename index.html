@@ -3,18 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>InfernoX Store</title>
+  <title>InfernoX Play Store</title>
 
   <!-- Firebase SDK -->
   <script type="module">
-    // Import Firebase SDKs
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { 
-      getAuth, 
-      createUserWithEmailAndPassword, 
-      signInWithEmailAndPassword, 
-      signOut 
-    } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+    import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } 
+      from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
     // ✅ तुम्हारा Firebase Config
     const firebaseConfig = {
@@ -27,40 +22,42 @@
       measurementId: "G-ZJ2L4E58T1"
     };
 
-    // Initialize Firebase
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
+    const provider = new GoogleAuthProvider();
 
-    // Login Function
-    window.loginUser = function () {
-      const email = document.getElementById("email").value;
-      const password = document.getElementById("password").value;
-
-      signInWithEmailAndPassword(auth, email, password)
-        .then(() => {
+    // ✅ Google Login Function
+    window.googleLogin = function() {
+      signInWithPopup(auth, provider)
+        .then((result) => {
+          const user = result.user;
           document.querySelector(".login-page").style.display = "none";
           document.querySelector(".home-page").style.display = "block";
+          document.getElementById("userName").innerText = user.displayName;
+          document.getElementById("userPhoto").src = user.photoURL;
         })
-        .catch((error) => alert(error.message));
+        .catch((error) => {
+          alert("Login failed: " + error.message);
+        });
     };
 
-    // Signup Function
-    window.signupUser = function () {
-      const email = document.getElementById("email").value;
-      const password = document.getElementById("password").value;
-
-      createUserWithEmailAndPassword(auth, email, password)
-        .then(() => alert("Account created successfully! Now login."))
-        .catch((error) => alert(error.message));
-    };
-
-    // Logout Function
-    window.logoutUser = function () {
+    // ✅ Logout Function
+    window.logoutUser = function() {
       signOut(auth).then(() => {
         document.querySelector(".home-page").style.display = "none";
         document.querySelector(".login-page").style.display = "block";
       });
     };
+
+    // ✅ Check if user already logged in
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        document.querySelector(".login-page").style.display = "none";
+        document.querySelector(".home-page").style.display = "block";
+        document.getElementById("userName").innerText = user.displayName;
+        document.getElementById("userPhoto").src = user.photoURL;
+      }
+    });
   </script>
 
   <style>
@@ -87,27 +84,19 @@
       box-shadow: 0 4px 10px rgba(0,0,0,0.1);
     }
 
-    input {
-      width: 90%;
-      padding: 10px;
-      margin: 10px 0;
-      border-radius: 8px;
-      border: 1px solid #ccc;
-      font-size: 16px;
-    }
-
     button {
-      background: #34a853;
+      background: #4285f4;
       color: white;
       border: none;
       padding: 10px 20px;
       border-radius: 8px;
       cursor: pointer;
       font-size: 16px;
+      margin-top: 10px;
     }
 
     button:hover {
-      background: #2c8a44;
+      background: #3367d6;
     }
 
     .home-header {
@@ -119,12 +108,16 @@
       padding: 15px 20px;
     }
 
-    .search-bar input {
-      width: 90%;
-      padding: 8px;
-      border-radius: 10px;
-      border: none;
-      outline: none;
+    .user-info {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .user-info img {
+      width: 35px;
+      height: 35px;
+      border-radius: 50%;
     }
 
     .apps {
@@ -163,23 +156,19 @@
 
   <!-- LOGIN PAGE -->
   <div class="login-page">
-    <h2>Login to InfernoX Store</h2>
-    <input type="email" id="email" placeholder="Enter Email">
-    <input type="password" id="password" placeholder="Enter Password">
-    <br>
-    <button onclick="loginUser()">Login</button>
-    <button onclick="signupUser()">Sign Up</button>
+    <h2>Welcome to InfernoX Store</h2>
+    <p>Login using your Google Account</p>
+    <button onclick="googleLogin()">🔐 Sign in with Google</button>
   </div>
 
   <!-- HOME PAGE -->
   <div class="home-page">
     <div class="home-header">
-      <h2>InfernoX Play Store</h2>
+      <div class="user-info">
+        <img id="userPhoto" src="" alt="User">
+        <span id="userName"></span>
+      </div>
       <button onclick="logoutUser()">Logout</button>
-    </div>
-
-    <div class="search-bar" style="text-align:center;margin:20px;">
-      <input type="text" placeholder="Search for apps...">
     </div>
 
     <div class="apps">
@@ -200,5 +189,6 @@
       </div>
     </div>
   </div>
+
 </body>
 </html>
