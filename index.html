@@ -1,74 +1,22 @@
 <meta name='viewport' content='width=device-width, initial-scale=1'/><!DOCTYPE html>
-<html lang="hi">
+<html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Firebase OTP Login</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #0f172a;
-      color: white;
-      text-align: center;
-      padding: 30px;
-    }
-    input {
-      padding: 10px;
-      margin: 10px;
-      border-radius: 6px;
-      border: none;
-      outline: none;
-      width: 250px;
-    }
-    button {
-      background: #3b82f6;
-      border: none;
-      padding: 10px 20px;
-      color: white;
-      border-radius: 6px;
-      cursor: pointer;
-    }
-    button:hover { background: #2563eb; }
-    #userPanel {
-      display: none;
-      background: #1e293b;
-      padding: 20px;
-      border-radius: 10px;
-      margin-top: 20px;
-    }
-  </style>
-</head>
-<body>
-  <h2>📱 Firebase OTP Login System</h2>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>InfernoX Store</title>
 
-  <div id="loginBox">
-    <input type="text" id="phoneNumber" placeholder="+91XXXXXXXXXX" /><br>
-    <div id="recaptcha-container"></div>
-    <button id="sendOtpBtn">Send OTP</button>
-
-    <div id="otpBox" style="display:none;">
-      <input type="text" id="otp" placeholder="Enter OTP" /><br>
-      <button id="verifyOtpBtn">Verify OTP</button>
-    </div>
-  </div>
-
-  <div id="userPanel">
-    <h3>✅ Login Successful!</h3>
-    <p id="userNumber"></p>
-    <button id="logoutBtn">Logout</button>
-  </div>
-
+  <!-- Firebase SDK -->
   <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.0/firebase-app.js";
-    import {
-      getAuth,
-      RecaptchaVerifier,
-      signInWithPhoneNumber,
-      signOut,
-      onAuthStateChanged
-    } from "https://www.gstatic.com/firebasejs/10.14.0/firebase-auth.js";
+    // Import Firebase SDKs
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { 
+      getAuth, 
+      createUserWithEmailAndPassword, 
+      signInWithEmailAndPassword, 
+      signOut 
+    } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
-    // 🔥 Firebase config (तुम्हारा project)
+    // ✅ तुम्हारा Firebase Config
     const firebaseConfig = {
       apiKey: "AIzaSyBtYFjOBAuDQkcrwKRKP4FzbSb5N5pudYk",
       authDomain: "v-tok-d78ad.firebaseapp.com",
@@ -79,78 +27,178 @@
       measurementId: "G-ZJ2L4E58T1"
     };
 
-    // Firebase init
+    // Initialize Firebase
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
 
-    // reCAPTCHA invisible
-    window.recaptchaVerifier = new RecaptchaVerifier(auth, "recaptcha-container", {
-      size: "invisible",
-    });
+    // Login Function
+    window.loginUser = function () {
+      const email = document.getElementById("email").value;
+      const password = document.getElementById("password").value;
 
-    const sendOtpBtn = document.getElementById("sendOtpBtn");
-    const verifyOtpBtn = document.getElementById("verifyOtpBtn");
-    const phoneInput = document.getElementById("phoneNumber");
-    const otpBox = document.getElementById("otpBox");
-    const userPanel = document.getElementById("userPanel");
-    const userNumber = document.getElementById("userNumber");
-    const logoutBtn = document.getElementById("logoutBtn");
-
-    // OTP भेजना
-    sendOtpBtn.addEventListener("click", () => {
-      const phoneNumber = phoneInput.value;
-      if (!phoneNumber.startsWith("+91")) {
-        alert("कृपया +91 के साथ नंबर डालें, जैसे +919876543210");
-        return;
-      }
-
-      const appVerifier = window.recaptchaVerifier;
-      signInWithPhoneNumber(auth, phoneNumber, appVerifier)
-        .then((confirmationResult) => {
-          window.confirmationResult = confirmationResult;
-          alert("OTP भेज दिया गया!");
-          otpBox.style.display = "block";
+      signInWithEmailAndPassword(auth, email, password)
+        .then(() => {
+          document.querySelector(".login-page").style.display = "none";
+          document.querySelector(".home-page").style.display = "block";
         })
-        .catch((error) => {
-          alert("OTP भेजने में Error: " + error.message);
-        });
-    });
+        .catch((error) => alert(error.message));
+    };
 
-    // OTP Verify करना
-    verifyOtpBtn.addEventListener("click", () => {
-      const code = document.getElementById("otp").value;
-      window.confirmationResult.confirm(code)
-        .then((result) => {
-          const user = result.user;
-          alert("Login Successful!");
-          showUserPanel(user);
-        })
-        .catch((error) => {
-          alert("गलत OTP! कृपया दुबारा कोशिश करें।");
-        });
-    });
+    // Signup Function
+    window.signupUser = function () {
+      const email = document.getElementById("email").value;
+      const password = document.getElementById("password").value;
 
-    // User Panel दिखाना
-    function showUserPanel(user) {
-      document.getElementById("loginBox").style.display = "none";
-      userPanel.style.display = "block";
-      userNumber.innerText = "Your Number: " + user.phoneNumber;
+      createUserWithEmailAndPassword(auth, email, password)
+        .then(() => alert("Account created successfully! Now login."))
+        .catch((error) => alert(error.message));
+    };
+
+    // Logout Function
+    window.logoutUser = function () {
+      signOut(auth).then(() => {
+        document.querySelector(".home-page").style.display = "none";
+        document.querySelector(".login-page").style.display = "block";
+      });
+    };
+  </script>
+
+  <style>
+    body {
+      font-family: "Poppins", sans-serif;
+      margin: 0;
+      background: #f5f5f5;
+      color: #333;
     }
 
-    // Logout
-    logoutBtn.addEventListener("click", () => {
-      signOut(auth);
-    });
+    .login-page, .home-page {
+      display: none;
+      padding: 20px;
+    }
 
-    // Auth State change
-    onAuthStateChanged(auth, (user) => {
-      if (user) {
-        showUserPanel(user);
-      } else {
-        document.getElementById("loginBox").style.display = "block";
-        userPanel.style.display = "none";
-      }
-    });
-  </script>
+    .login-page {
+      display: block;
+      text-align: center;
+      background: white;
+      max-width: 400px;
+      margin: 80px auto;
+      padding: 30px;
+      border-radius: 16px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    }
+
+    input {
+      width: 90%;
+      padding: 10px;
+      margin: 10px 0;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      font-size: 16px;
+    }
+
+    button {
+      background: #34a853;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 16px;
+    }
+
+    button:hover {
+      background: #2c8a44;
+    }
+
+    .home-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #34a853;
+      color: white;
+      padding: 15px 20px;
+    }
+
+    .search-bar input {
+      width: 90%;
+      padding: 8px;
+      border-radius: 10px;
+      border: none;
+      outline: none;
+    }
+
+    .apps {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 20px;
+      padding: 20px;
+    }
+
+    .app-card {
+      background: white;
+      border-radius: 12px;
+      padding: 10px;
+      text-align: center;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    }
+
+    .app-card img {
+      width: 100%;
+      height: 100px;
+      border-radius: 12px;
+      object-fit: cover;
+    }
+
+    .install-btn {
+      margin-top: 8px;
+      background: #4285f4;
+    }
+
+    .install-btn:hover {
+      background: #2f64c9;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- LOGIN PAGE -->
+  <div class="login-page">
+    <h2>Login to InfernoX Store</h2>
+    <input type="email" id="email" placeholder="Enter Email">
+    <input type="password" id="password" placeholder="Enter Password">
+    <br>
+    <button onclick="loginUser()">Login</button>
+    <button onclick="signupUser()">Sign Up</button>
+  </div>
+
+  <!-- HOME PAGE -->
+  <div class="home-page">
+    <div class="home-header">
+      <h2>InfernoX Play Store</h2>
+      <button onclick="logoutUser()">Logout</button>
+    </div>
+
+    <div class="search-bar" style="text-align:center;margin:20px;">
+      <input type="text" placeholder="Search for apps...">
+    </div>
+
+    <div class="apps">
+      <div class="app-card">
+        <img src="https://via.placeholder.com/150" alt="App">
+        <h4>Free Fire</h4>
+        <button class="install-btn">Install</button>
+      </div>
+      <div class="app-card">
+        <img src="https://via.placeholder.com/150" alt="App">
+        <h4>Clash of Clans</h4>
+        <button class="install-btn">Install</button>
+      </div>
+      <div class="app-card">
+        <img src="https://via.placeholder.com/150" alt="App">
+        <h4>Subway Surfers</h4>
+        <button class="install-btn">Install</button>
+      </div>
+    </div>
+  </div>
 </body>
 </html>
